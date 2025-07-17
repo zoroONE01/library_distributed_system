@@ -259,3 +259,34 @@ venv.bak/
 !*.md
 !.gitignore
 !.gitattributes
+
+# ===================================
+# Go Backend: library_distributed_server
+# ===================================
+library_distributed_server/bin/
+library_distributed_server/dist/
+library_distributed_server/*.exe
+library_distributed_server/*.dll
+library_distributed_server/*.so
+library_distributed_server/*.dylib
+library_distributed_server/*.test
+library_distributed_server/*.out
+library_distributed_server/*.prof
+library_distributed_server/go.sum
+library_distributed_server/go.work
+library_distributed_server/go.work.sum
+library_distributed_server/vendor/
+library_distributed_server/__debug_bin
+library_distributed_server/.env
+library_distributed_server/.env.*
+library_distributed_server/logs/
+library_distributed_server/*.log
+library_distributed_server/transaction_logs/
+library_distributed_server/2pc_logs/
+library_distributed_server/replication_cache/
+library_distributed_server/sync_data/
+library_distributed_server/test_coverage/
+library_distributed_server/integration_test_data/
+library_distributed_server/test_databases/
+library_distributed_server/*.db
+library_distributed_server/*.sqlite
