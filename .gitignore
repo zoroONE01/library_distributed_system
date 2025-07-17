@@ -1,0 +1,261 @@
+# ===================================
+# Distributed Library Management System
+# .gitignore for Flutter + Go Backend
+# ===================================
+
+# ===================================
+# Flutter & Dart Specific
+# ===================================
+
+# Build outputs
+/build/
+**/build/
+!**/macos/Flutter/
+!**/windows/flutter/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec.lock
+
+# Coverage reports
+coverage/
+lcov.info
+
+# Analysis & Linter
+analysis_options.yaml.bak
+
+# ===================================
+# Platform Specific (Flutter)
+# ===================================
+
+# macOS
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+
+# Windows
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+
+# Web
+**/web/index.html.bak
+
+# ===================================
+# Go Backend Specific
+# ===================================
+
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+**/bin/
+**/dist/
+
+# Go test binary, built with `go test -c`
+*.test
+
+# Go coverage files
+*.out
+*.prof
+
+# Go modules
+go.sum
+go.work
+go.work.sum
+
+# Vendor directory (if using vendor/)
+vendor/
+
+# IDE files for Go
+.vscode-go/
+__debug_bin
+
+# ===================================
+# Database & Configuration
+# ===================================
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment & Configuration
+.env
+.env.local
+.env.*.local
+config.local.yaml
+config.local.json
+
+# Connection strings & sensitive data
+**/secrets/
+database.config
+connection_strings.json
+
+# SSL/TLS certificates
+*.pem
+*.key
+*.crt
+*.cert
+
+# ===================================
+# System & OS
+# ===================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ===================================
+# Development & Debug
+# ===================================
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+temp/
+
+# Cache directories
+.cache/
+cache/
+
+# Debug files
+debug/
+**/debug/
+
+# ===================================
+# Documentation & Reports
+# ===================================
+
+# Generated documentation
+**/doc/api/
+**/documentation/generated/
+
+# Academic reports (keep source, ignore generated)
+*.pdf.bak
+**/reports/generated/
+
+# ===================================
+# Distributed System Specific
+# ===================================
+
+# Site-specific configurations
+**/site_configs/local/
+**/site_configs/development/
+
+# Transaction logs
+transaction_logs/
+2pc_logs/
+
+# Replication data
+replication_cache/
+sync_data/
+
+# Load testing results
+load_test_results/
+performance_logs/
+
+# ===================================
+# Testing & CI/CD
+# ===================================
+
+# Test coverage
+coverage/
+test_coverage/
+*.coverage
+
+# Integration test data
+integration_test_data/
+test_databases/
+
+# CI/CD artifacts
+.github/workflows/artifacts/
+ci_artifacts/
+
+# ===================================
+# Miscellaneous
+# ===================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Package files
+*.tgz
+*.tar.xz
+
+# Node.js (if using for tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if using for scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Keep important files
+!README.md
+!LICENSE
+!docs/
+!*.md
+!.gitignore
+!.gitattributes
