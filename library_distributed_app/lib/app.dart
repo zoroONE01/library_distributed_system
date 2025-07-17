@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:library_distributed_app/core/theme/app_theme.dart';
 import 'package:library_distributed_app/router/router.dart';
 
 class App extends HookConsumerWidget {
@@ -12,6 +13,9 @@ class App extends HookConsumerWidget {
     return MaterialApp.router(
       title: 'Library Management',
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }
