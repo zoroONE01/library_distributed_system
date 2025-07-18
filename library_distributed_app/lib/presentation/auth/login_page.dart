@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
+import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
 import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
 import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
@@ -12,42 +13,29 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScaffold(
       body: Center(
-        child: Card.filled(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              width: 1,
-              color: context.colorScheme.outline.withValues(alpha: .4),
-            ),
-          ),
-          child: Container(
-            width: 420,
-            padding: EdgeInsets.all(40),
-            child: Column(
-              spacing: 10,
+        child: Column(
+          spacing: 10,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               mainAxisSize: MainAxisSize.min,
+              spacing: 10,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 10,
-                  children: [
-                    Icon(
-                      Icons.menu_book_rounded,
-                      size: 40,
-                      color: context.primaryColor,
-                    ),
-                    Text('Quản lý Thư viện', style: context.headlineLarge),
-                  ],
+                Icon(
+                  Icons.menu_book_rounded,
+                  size: 40,
+                  color: context.primaryColor,
                 ),
-                Text(
-                  'Đăng nhập để truy cập hệ thống',
-                  style: context.bodyLarge,
-                ),
-                LoginForm(),
+                Text('Quản lý Thư viện', style: context.headlineLarge),
               ],
             ),
-          ),
-        ),
+            Text(
+              'Đăng nhập để truy cập hệ thống',
+              style: context.bodyLarge,
+            ),
+            LoginForm(),
+          ],
+        ).wrapByCard(context, width: 420, padding: EdgeInsets.all(40)),
       ),
     );
   }

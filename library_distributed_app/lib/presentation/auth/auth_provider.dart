@@ -18,7 +18,6 @@ class Auth extends _$Auth {
     required String password,
   }) async {
     ref.startLoading();
-    await Future.delayed(const Duration(seconds: 3));
     secureStorage.writeAccessToken('mock_access_token');
     state = AsyncValue.data(true);
     ref.stopLoading();
