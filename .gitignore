@@ -141,6 +141,12 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 
+# ─────────────────────────────────────────────────────────
+# Generated files in library_distributed_app
+# ─────────────────────────────────────────────────────────
+/library_distributed_app/lib/gen/
+/library_distributed_app/**/*.g.dart
+
 # ===================================
 # Development & Debug
 # ===================================
