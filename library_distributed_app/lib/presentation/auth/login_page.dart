@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
+import 'package:library_distributed_app/presentation/widgets/app_button.dart';
 import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
 import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
 
@@ -29,10 +30,7 @@ class LoginPage extends StatelessWidget {
                 Text('Quản lý Thư viện', style: context.headlineLarge),
               ],
             ),
-            Text(
-              'Đăng nhập để truy cập hệ thống',
-              style: context.bodyLarge,
-            ),
+            Text('Đăng nhập để truy cập hệ thống', style: context.headlineSmall),
             LoginForm(),
           ],
         ).wrapByCard(context, width: 420, padding: EdgeInsets.all(40)),
@@ -61,30 +59,15 @@ class LoginForm extends ConsumerWidget {
             obscureText: true,
             prefixIcon: Icon(Icons.lock_outline_rounded, size: 20),
           ),
-          SizedBox(
-            height: 48,
+          AppButton(
+            label: 'Đăng nhập',
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ref
-                    .read(authProvider.notifier)
-                    .login(username: 'testuser', password: 'password');
-              },
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                iconColor: context.onSurface,
-              ),
-              icon: Icon(Icons.login),
-              label: Text(
-                'Đăng nhập',
-                style: context.labelLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.onSurface,
-                ),
-              ),
-            ),
+            icon: Icon(Icons.login_rounded),
+            onPressed: () {
+              ref
+                  .read(authProvider.notifier)
+                  .login(username: 'testuser', password: 'password');
+            },
           ),
         ],
       ),

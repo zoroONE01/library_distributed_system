@@ -7,9 +7,11 @@ extension WidgetExtension on Widget {
     EdgeInsets? padding,
     double? width,
     double? height,
+    Color? backgroundColor,
   }) {
     return Card.filled(
       key: key,
+      color: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
@@ -23,6 +25,25 @@ extension WidgetExtension on Widget {
         height: height,
         child: this,
       ),
+    );
+  }
+
+  Widget withIcon(
+    IconData icon, {
+    double iconSize = 24,
+    double spacing = 8,
+    Color? iconColor,
+    bool isRightSide = false,
+    TextDirection? textDirection,
+  }) {
+    return Row(
+      spacing: spacing,
+      mainAxisSize: MainAxisSize.min,
+      textDirection: textDirection,
+      children: [
+        Icon(icon, size: iconSize, color: iconColor),
+        Flexible(child: this),
+      ],
     );
   }
 }

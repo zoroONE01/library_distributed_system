@@ -92,7 +92,27 @@ class AppScaffold extends StatelessWidget {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: appBar,
-          body: body,
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                        maxWidth: 1200,
+                        minWidth: 600,
+                      ),
+                      child: body,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           floatingActionButton: floatingActionButton,
           floatingActionButtonLocation: floatingActionButtonLocation,
           floatingActionButtonAnimator: floatingActionButtonAnimator,

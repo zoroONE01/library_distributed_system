@@ -7,11 +7,12 @@ part 'app_theme_mode.g.dart';
 class AppThemeMode extends _$AppThemeMode {
   @override
   ThemeMode build() {
-    return ThemeMode.dark;
+    return ThemeMode.system;
   }
 
   void toggleBrightness() {
-    // Toggle between light and dark mode
-    state = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    final allModes = ThemeMode.values;
+    final currentIndex = allModes.indexOf(state);
+    state = allModes[(currentIndex + 1) % allModes.length];
   }
 }
