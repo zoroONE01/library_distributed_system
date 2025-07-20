@@ -2,6 +2,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final localStorage = LocalStorageManager.instance;
 
+final class LocalStorageKeys {
+  const LocalStorageKeys._();
+  static const themeMode = 'theme_mode';
+}
+
 class LocalStorageManager {
   LocalStorageManager._privateConstructor();
   static final LocalStorageManager instance =

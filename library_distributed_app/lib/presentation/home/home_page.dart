@@ -8,6 +8,7 @@ import 'package:library_distributed_app/core/theme/app_theme_mode.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
 import 'package:library_distributed_app/presentation/widgets/app_button.dart';
 import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
+import 'package:library_distributed_app/presentation/widgets/app_table.dart';
 import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
 import 'package:library_distributed_app/presentation/widgets/board_layout.dart';
 
@@ -114,7 +115,32 @@ class HomePage extends ConsumerWidget {
                 ).withIcon(Icons.people_alt_outlined),
                 AppButton(
                   label: 'Thêm Độc giả mới',
-                  onPressed: () {},
+                  onPressed: () {
+                    showAdaptiveDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Thêm Độc giả mới'),
+                          content: AppTextField(
+                            context,
+                            labelText: 'Nhập tên độc giả',
+                            prefixIcon: Icon(Icons.person_add_alt_1_rounded),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('Hủy', style: context.bodyLarge),
+                            ),
+                            TextButton(
+                              onPressed: Navigator.of(context).pop,
+                              child: Text('Thêm', style: context.bodyLarge),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                   backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   shadowColor: Colors.transparent,
                 ),
@@ -130,6 +156,30 @@ class HomePage extends ConsumerWidget {
             ).withIcon(Icons.search_rounded),
             AppTextField(
               context,
+              onTap: () {
+                showAdaptiveDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      content: AppTextField(
+                        context,
+                        labelText: 'Nhập từ khóa tìm kiếm',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('Hủy', style: context.bodyLarge),
+                        ),
+                        TextButton(
+                          onPressed: Navigator.of(context).pop,
+                          child: Text('Tìm kiếm', style: context.bodyLarge),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
               labelText: 'Tìm sách, độc giả tại chi nhánh...',
             ),
             AppButton(
@@ -257,7 +307,6 @@ class HomePage extends ConsumerWidget {
                     Expanded(
                       child: Column(
                         spacing: 16,
-
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -301,58 +350,15 @@ class HomePage extends ConsumerWidget {
                       ),
                   onPressed: () {},
                 ),
-                Table(
-                  border: TableBorder.all(
-                    color: context.colorScheme.outline.withValues(alpha: 0.4),
-                    width: 1,
-                  ),
-                  columnWidths: const {
-                    0: FlexColumnWidth(),
-                    1: FlexColumnWidth(),
-                    2: FlexColumnWidth(),
-                    3: FlexColumnWidth(),
-                    4: FlexColumnWidth(),
-                  },
-                  children: [
-                    TableRow(
-                      decoration: BoxDecoration(
-                        color: context.onSurface.withValues(alpha: 0.1),
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text('Mã sách', style: context.bodyLarge.bold),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Tên sách',
-                            style: context.bodyLarge.bold,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Mã đọc giả',
-                            style: context.bodyLarge.bold,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Ngày mượn',
-                            style: context.bodyLarge.bold,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Tình trạng',
-                            style: context.bodyLarge.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                AppTable.build(
+                  context,
+                  columnWidths: const [1, 1, 1, 1, 1],
+                  titles: [
+                    'Mã sách',
+                    'Tên sách',
+                    'Mã đọc giả',
+                    'Ngày mượn',
+                    'Tình trạng',
                   ],
                 ),
               ],

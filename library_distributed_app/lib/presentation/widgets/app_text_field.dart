@@ -14,6 +14,7 @@ class AppTextField extends TextFormField {
     super.onFieldSubmitted,
     super.focusNode,
     super.textInputAction,
+    super.onTap,
     String? labelText,
     Widget? prefixIcon,
   }) : super(

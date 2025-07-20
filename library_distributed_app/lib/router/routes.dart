@@ -1,10 +1,44 @@
 part of 'router.dart';
 
-@TypedGoRoute<LoginRoute>(path: '/login')
-class LoginRoute extends GoRouteData {
-  const LoginRoute();
+// MAIN SHELL ROUTE WITH NESTED NAVIGATION
+@TypedStatefulShellRoute<AppShellRoute>(
+  branches: <TypedStatefulShellBranch<StatefulShellBranchData>>[
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<HomeRoute>>[TypedGoRoute<HomeRoute>(path: '/')],
+    ),
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<BookListRoute>>[
+        TypedGoRoute<BookListRoute>(path: '/books'),
+      ],
+    ),
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<ReaderListRoute>>[
+        TypedGoRoute<ReaderListRoute>(path: '/readers'),
+      ],
+    ),
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<BorrowRoute>>[
+        TypedGoRoute<BorrowRoute>(path: '/borrow'),
+      ],
+    ),
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<BranchesRoute>>[
+        TypedGoRoute<BranchesRoute>(path: '/branches'),
+      ],
+    ),
+  ],
+)
+class AppShellRoute extends StatefulShellRouteData {
+  const AppShellRoute();
+
   @override
-  Widget build(BuildContext context, GoRouterState state) => const LoginPage();
+  Widget builder(
+    BuildContext context,
+    GoRouterState state,
+    StatefulNavigationShell navigationShell,
+  ) {
+    return MainPage(navigationShell: navigationShell);
+  }
 }
 
 @TypedGoRoute<HomeRoute>(path: '/')
@@ -12,4 +46,42 @@ class HomeRoute extends GoRouteData {
   const HomeRoute();
   @override
   Widget build(BuildContext context, GoRouterState state) => const HomePage();
+}
+
+@TypedGoRoute<BookListRoute>(path: '/books')
+class BookListRoute extends GoRouteData {
+  const BookListRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const BookListPage();
+}
+
+@TypedGoRoute<ReaderListRoute>(path: '/readers')
+class ReaderListRoute extends GoRouteData {
+  const ReaderListRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ReaderListPage();
+}
+
+@TypedGoRoute<BorrowRoute>(path: '/borrow')
+class BorrowRoute extends GoRouteData {
+  const BorrowRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const BorrowPage();
+}
+
+@TypedGoRoute<BranchesRoute>(path: '/branches')
+class BranchesRoute extends GoRouteData {
+  const BranchesRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const BranchesPage();
+}
+
+@TypedGoRoute<LoginRoute>(path: '/login')
+class LoginRoute extends GoRouteData {
+  const LoginRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const LoginPage();
 }
