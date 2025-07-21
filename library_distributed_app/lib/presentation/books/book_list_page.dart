@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:library_distributed_app/core/extensions/text_style_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
+import 'package:library_distributed_app/presentation/books/book_list_create_dialog.dart';
+import 'package:library_distributed_app/presentation/books/book_list_sort_dialog.dart';
 import 'package:library_distributed_app/presentation/widgets/app_button.dart';
 import 'package:library_distributed_app/presentation/widgets/app_pagination_controls.dart';
 import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
@@ -32,13 +34,15 @@ class BookListPage extends StatelessWidget {
               AppButton(
                 label: 'Thêm sách mới',
                 icon: Icon(Icons.add_rounded, size: 20),
-                onPressed: () {},
+                onPressed: () {
+                  BookListCreateDialog().showAsDialog(context);
+                },
                 backgroundColor: context.primaryColor,
               ),
             ],
           ).wrapByCard(context),
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             spacing: 20,
             children: [
               Row(
@@ -54,7 +58,9 @@ class BookListPage extends StatelessWidget {
                   AppButton(
                     label: 'Sắp xếp',
                     icon: Icon(Icons.sort_rounded, size: 20),
-                    onPressed: () {},
+                    onPressed: () {
+                      BookListSortDialog().showAsDialog(context);
+                    },
                     shadowColor: Colors.transparent,
                     backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   ),
@@ -69,7 +75,7 @@ class BookListPage extends StatelessWidget {
               ),
               AppTable.build(
                 context,
-                columnWidths: const [1, 4, 3, 1, 1],
+                columnWidths: const [1, 5, 2, 1, 1],
                 titles: [
                   'Mã sách',
                   'Tên sách',
@@ -77,11 +83,31 @@ class BookListPage extends StatelessWidget {
                   'Số lượng',
                   'Hành động',
                 ],
-                rows: [
-                  _buildRow(context, onEdit: () {}, onDelete: () {}),
-                  _buildRow(context, onEdit: () {}, onDelete: () {}),
-                  _buildRow(context, onEdit: () {}, onDelete: () {}),
-                ],
+                rows: List.generate(
+                  10,
+                  (index) => _buildRow(
+                    context,
+                    onEdit: () {
+                      BookListCreateDialog().showAsDialog(context);
+                    },
+                    onDelete: () {
+                      AlertDialog(
+                        title: Text('Xác nhận xóa sách'),
+                        content: Text('Bạn có chắc chắn muốn xóa sách này?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text('Hủy', style: context.bodyLarge),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: Text('Xóa', style: context.bodyLarge),
+                          ),
+                        ],
+                      ).showAsDialog(context);
+                    },
+                  ),
+                ),
               ),
               AppPaginationControls(
                 totalItems: 100,
@@ -124,6 +150,7 @@ class BookListPage extends StatelessWidget {
               ),
               IconButton(
                 icon: Icon(Icons.delete_rounded, size: 20),
+                color: context.errorColor,
                 onPressed: onDelete,
               ),
             ],

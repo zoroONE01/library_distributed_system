@@ -46,4 +46,13 @@ extension WidgetExtension on Widget {
       ],
     );
   }
+
+  Future<T?> showAsDialog<T>(BuildContext context) {
+    return showAdaptiveDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      routeSettings: RouteSettings(name: 'dialog_$runtimeType'),
+      builder: (context) => this,
+    );
+  }
 }

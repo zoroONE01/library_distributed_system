@@ -1,11 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/text_style_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/core/theme/app_theme_mode.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
+import 'package:library_distributed_app/presentation/readers/reader_list_create_dialog.dart';
+import 'package:library_distributed_app/presentation/search/search_page.dart';
 import 'package:library_distributed_app/presentation/widgets/app_button.dart';
 import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
 import 'package:library_distributed_app/presentation/widgets/app_table.dart';
@@ -45,11 +49,6 @@ class HomePage extends ConsumerWidget {
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(Icons.settings, color: context.onSurface),
-              title: Text('Cài đặt', style: context.bodyLarge),
-              onTap: () {},
-            ),
             Consumer(
               builder: (context, ref, child) {
                 final themeMode = ref.watch(appThemeModeProvider);
@@ -63,9 +62,9 @@ class HomePage extends ConsumerWidget {
                     'Theme: ${themeMode.name.toUpperCase()}',
                     style: context.bodyLarge,
                   ),
-                  onTap: () {
-                    ref.read(appThemeModeProvider.notifier).toggleBrightness();
-                  },
+                  onTap: ref
+                      .read(appThemeModeProvider.notifier)
+                      .toggleBrightness,
                 );
               },
             ),
@@ -81,14 +80,11 @@ class HomePage extends ConsumerWidget {
                       content: Text('Bạn có chắc chắn muốn đăng xuất?'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: context.maybePop,
                           child: Text('Hủy', style: context.bodyLarge),
                         ),
                         TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            ref.read(authProvider.notifier).logout();
-                          },
+                          onPressed: ref.read(authProvider.notifier).logout,
                           child: Text('Đăng xuất', style: context.bodyLarge),
                         ),
                       ],
@@ -116,30 +112,7 @@ class HomePage extends ConsumerWidget {
                 AppButton(
                   label: 'Thêm Độc giả mới',
                   onPressed: () {
-                    showAdaptiveDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: Text('Thêm Độc giả mới'),
-                          content: AppTextField(
-                            context,
-                            labelText: 'Nhập tên độc giả',
-                            prefixIcon: Icon(Icons.person_add_alt_1_rounded),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text('Hủy', style: context.bodyLarge),
-                            ),
-                            TextButton(
-                              onPressed: Navigator.of(context).pop,
-                              child: Text('Thêm', style: context.bodyLarge),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    ReaderListCreateDialog().showAsDialog(context);
                   },
                   backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   shadowColor: Colors.transparent,
@@ -157,34 +130,15 @@ class HomePage extends ConsumerWidget {
             AppTextField(
               context,
               onTap: () {
-                showAdaptiveDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      content: AppTextField(
-                        context,
-                        labelText: 'Nhập từ khóa tìm kiếm',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text('Hủy', style: context.bodyLarge),
-                        ),
-                        TextButton(
-                          onPressed: Navigator.of(context).pop,
-                          child: Text('Tìm kiếm', style: context.bodyLarge),
-                        ),
-                      ],
-                    );
-                  },
-                );
+                SearchPage().showAsDialog(context);
               },
               labelText: 'Tìm sách, độc giả tại chi nhánh...',
             ),
             AppButton(
               label: 'Tìm kiếm',
-              onPressed: () {},
+              onPressed: () {
+                SearchPage().showAsDialog(context);
+              },
               width: double.infinity,
               backgroundColor: context.onSurface.withValues(alpha: 0.2),
               shadowColor: Colors.transparent,
@@ -213,9 +167,7 @@ class HomePage extends ConsumerWidget {
                 Builder(
                   builder: (context) {
                     return CupertinoButton(
-                      onPressed: () {
-                        Scaffold.of(context).openEndDrawer();
-                      },
+                      onPressed: Scaffold.of(context).openEndDrawer,
                       padding: EdgeInsets.zero,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
@@ -348,7 +300,9 @@ class HomePage extends ConsumerWidget {
                         Icons.info_outlined,
                         iconColor: context.headlineSmall.color,
                       ),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.go('/borrow');
+                  },
                 ),
                 AppTable.build(
                   context,

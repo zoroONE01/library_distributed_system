@@ -18,9 +18,9 @@ class AppPaginationControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalPages = (totalItems / itemsPerPage).ceil();
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Trang $currentPage của $totalPages'),
+        Text('Trang $currentPage trong $totalPages'),
         IconButton(
           icon: Icon(Icons.chevron_left_rounded),
           onPressed: currentPage > 1

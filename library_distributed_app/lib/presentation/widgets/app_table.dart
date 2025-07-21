@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:library_distributed_app/core/extensions/text_style_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 
@@ -55,7 +55,7 @@ class AppTable {
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Text(
+        child: SelectableText(
           text,
           style: context.bodyLarge.bold,
           textAlign: TextAlign.start,
