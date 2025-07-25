@@ -1,7 +1,7 @@
 // ignore: implementation_imports
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:library_distributed_app/core/constants/app_enum.dart';
+import 'package:library_distributed_app/core/constants/enums.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 
 class BookListSortDialog extends HookWidget {
