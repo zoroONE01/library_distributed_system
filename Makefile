@@ -1,94 +1,67 @@
-# Makefile for Distributed Library Management System
+# Distributed Library Management System - Simplified Makefile
 
 # --- Variables --------------------------------------------------
-# Commands
-GO          := go
-FLUTTER     := flutter
-
-# Directories
 BACKEND_DIR  := library_distributed_server
 FRONTEND_DIR := library_distributed_app
-BIN_DIR      := bin
-
-# Database (MSSQL in Parallels VM)
-DB_HOST     ?= 10.211.55.3
-DB_PORT     ?= 1433
-
-# Go build flags
-GO_LDFLAGS  := -ldflags="-s -w"
 
 # --- Phony targets ---------------------------------------------
-.PHONY: all backend frontend build-backend build-frontend \
-        run-backend run-frontend \
-        site-q1 site-q3 coordinator \
-        test-backend test-frontend clean
+.PHONY: help start gen get clean
 
-# Default: build everything
-all: build-backend build-frontend
+# Default: show help
+help:
+	@echo "Distributed Library Management System"
+	@echo ""
+	@echo "Available commands:"
+	@echo "  make start - Start backend services only"
+	@echo "  make gen   - Generate Flutter code (build_runner, assets, etc.)"
+	@echo "  make get   - Get all dependencies (Go mod + Flutter pub get)"
+	@echo "  make clean - Clean all build artifacts"
+	@echo ""
+	@echo "Backend services will be available at:"
+	@echo "  Site Q1:     http://localhost:8081"
+	@echo "  Site Q3:     http://localhost:8083"
+	@echo "  Coordinator: http://localhost:8080"
 
-# Build backend services
-build-backend: $(BIN_DIR)/site-q1 $(BIN_DIR)/site-q3 $(BIN_DIR)/coordinator
 
-$(BIN_DIR)/site-q1:
-    @echo "Building site-q1 service..."
-    @mkdir -p $(BIN_DIR)
-    cd $(BACKEND_DIR)/cmd/site-q1 && \
-    $(GO) build $(GO_LDFLAGS) -o ../../../$(BIN_DIR)/site-q1
 
-$(BIN_DIR)/site-q3:
-    @echo "Building site-q3 service..."
-    @mkdir -p $(BIN_DIR)
-    cd $(BACKEND_DIR)/cmd/site-q3 && \
-    $(GO) build $(GO_LDFLAGS) -o ../../../$(BIN_DIR)/site-q3
+start:
+	@echo "Starting all distributed library system services..."
+	@echo "- Site Q1: http://localhost:8081"
+	@echo "- Site Q3: http://localhost:8083"
+	@echo "- Coordinator: http://localhost:8080"
+	@echo ""
+	@echo "Press Ctrl+C to stop all services"
+	@echo ""
+	cd $(BACKEND_DIR) && make run
 
-$(BIN_DIR)/coordinator:
-    @echo "Building coordinator service..."
-    @mkdir -p $(BIN_DIR)
-    cd $(BACKEND_DIR)/cmd/coordinator && \
-    $(GO) build $(GO_LDFLAGS) -o ../../../$(BIN_DIR)/coordinator
 
-# Build Flutter frontend (web + desktop)
-build-frontend:
-    @echo "Fetching Flutter dependencies..."
-    cd $(FRONTEND_DIR) && $(FLUTTER) pub get
-    @echo "Building Flutter web..."
-    cd $(FRONTEND_DIR) && $(FLUTTER) build web
-    @echo "Building Flutter macOS binary..."
-    cd $(FRONTEND_DIR) && $(FLUTTER) build macos --release
+# Generate Flutter code (build_runner, assets, etc.)
+gen:
+	@echo "Generating Flutter code and assets..."
+	@echo "1. Getting Flutter dependencies..."
+	cd $(FRONTEND_DIR) && flutter pub get
+	@echo "2. Running build_runner (generating code)..."
+	cd $(FRONTEND_DIR) && flutter packages pub run build_runner build --delete-conflicting-outputs
+	@echo "3. Generating app icon..."
+	cd $(FRONTEND_DIR) && flutter pub run flutter_launcher_icons:main
+	@echo "4. Generating native splash..."
+	cd $(FRONTEND_DIR) && flutter pub run flutter_native_splash:create
+	@echo "Flutter code generation completed!"
 
-# Run backend services (export DB vars)
-run-backend: export DB_HOST=$(DB_HOST)
-run-backend: export DB_PORT=$(DB_PORT)
-run-backend: site-q1 site-q3 coordinator
+# Get all dependencies
+get:
+	@echo "Getting all dependencies..."
+	@echo "1. Getting Go dependencies..."
+	cd $(BACKEND_DIR) && go mod tidy && go mod download
+	@echo "2. Generating Swagger documentation..."
+	cd $(BACKEND_DIR) && make swagger
+	@echo "3. Getting Flutter dependencies..."
+	cd $(FRONTEND_DIR) && flutter pub get
+	@echo "All dependencies restored and documentation generated!"
 
-site-q1:
-    @echo "Starting site-q1 on localhost:8081..."
-    DB_HOST=$(DB_HOST) DB_PORT=$(DB_PORT) \
-    $(BIN_DIR)/site-q1 &
-
-site-q3:
-    @echo "Starting site-q3 on localhost:8083..."
-    DB_HOST=$(DB_HOST) DB_PORT=$(DB_PORT) \
-    $(BIN_DIR)/site-q3 &
-
-coordinator:
-    @echo "Starting coordinator on localhost:8090..."
-    DB_HOST=$(DB_HOST) DB_PORT=$(DB_PORT) \
-    $(BIN_DIR)/coordinator &
-
-# Run Flutter frontend locally (web)
-run-frontend:
-    cd $(FRONTEND_DIR) && $(FLUTTER) run -d chrome
-
-# Tests
-test-backend:
-    cd $(BACKEND_DIR) && $(GO) test ./...
-
-test-frontend:
-    cd $(FRONTEND_DIR) && $(FLUTTER) test
-
-# Clean build artifacts
+# Clean all artifacts
 clean:
-    @echo "Cleaning binaries and build outputs..."
-    rm -rf $(BIN_DIR)
-    cd $(FRONTEND_DIR) && $(FLUTTER) clean
+	@echo "Cleaning all build artifacts..."
+	cd $(BACKEND_DIR) && make clean
+	cd $(FRONTEND_DIR) && flutter clean
+	rm -rf bin/

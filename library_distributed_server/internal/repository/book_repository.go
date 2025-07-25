@@ -1,11 +1,9 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
 	"library_distributed_server/internal/config"
 	"library_distributed_server/internal/models"
-	"sync"
 )
 
 type BookRepository struct {
@@ -18,17 +16,20 @@ func NewBookRepository(config *config.Config) *BookRepository {
 	}
 }
 
-func (r *BookRepository) GetBooks(ctx context.Context, siteID string) ([]models.Sach, error) {
+// GetBooks gets all books (replicated data) from any site
+func (r *BookRepository) GetBooks(siteID string) ([]models.Sach, error) {
 	conn, err := r.GetConnection(siteID)
 	if err != nil {
 		return nil, err
 	}
-	query := "SELECT ISBN, TenSach, TacGia FROM SACH"
-	rows, err := conn.QueryContext(ctx, query)
+
+	query := "SELECT ISBN, TenSach, TacGia FROM SACH ORDER BY TenSach"
+	rows, err := conn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var books []models.Sach
 	for rows.Next() {
 		var book models.Sach
@@ -38,20 +39,24 @@ func (r *BookRepository) GetBooks(ctx context.Context, siteID string) ([]models.
 		}
 		books = append(books, book)
 	}
+
 	return books, nil
 }
 
-func (r *BookRepository) GetBookCopies(ctx context.Context, siteID string) ([]models.QuyenSach, error) {
+// GetBookCopies gets book copies from local site (fragmented data)
+func (r *BookRepository) GetBookCopies(siteID string) ([]models.QuyenSach, error) {
 	conn, err := r.GetConnection(siteID)
 	if err != nil {
 		return nil, err
 	}
-	query := "SELECT MaQuyenSach, ISBN, MaCN, TinhTrang FROM QUYENSACH WHERE MaCN = ?"
-	rows, err := conn.QueryContext(ctx, query, siteID)
+
+	query := "SELECT MaQuyenSach, ISBN, MaCN, TinhTrang FROM QUYENSACH ORDER BY MaQuyenSach"
+	rows, err := conn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var copies []models.QuyenSach
 	for rows.Next() {
 		var copy models.QuyenSach
@@ -61,99 +66,105 @@ func (r *BookRepository) GetBookCopies(ctx context.Context, siteID string) ([]mo
 		}
 		copies = append(copies, copy)
 	}
+
 	return copies, nil
 }
 
-func (r *BookRepository) SearchBooksByTitle(ctx context.Context, title string) ([]models.BookSearchResult, error) {
-	books, err := r.searchBooksInReplicatedTable(ctx, title)
+// SearchBooksSystemWide implements FR7 - distributed book search
+func (r *BookRepository) SearchBooksSystemWide(tenSach, tacGia, isbn string) ([]models.BookSearchResult, error) {
+	// Get connection to any site (using Q1) for book search
+	conn, err := r.GetConnection("Q1")
 	if err != nil {
 		return nil, err
 	}
-	var results []models.BookSearchResult
-	availability, err := r.getBookAvailabilityAllSites(ctx, books)
-	if err != nil {
-		return nil, err
-	}
-	for _, book := range books {
-		result := models.BookSearchResult{
-			Sach:      book,
-			ChiNhanh:  []models.ChiNhanh{},
-			SoLuongCo: 0,
-		}
-		for siteID, count := range availability[book.ISBN] {
-			if count > 0 {
-				branch, err := r.getBranchInfo(ctx, siteID)
-				if err == nil {
-					result.ChiNhanh = append(result.ChiNhanh, branch)
-					result.SoLuongCo += count
-				}
-			}
-		}
-		if result.SoLuongCo > 0 {
-			results = append(results, result)
-		}
-	}
-	return results, nil
-}
 
-func (r *BookRepository) searchBooksInReplicatedTable(ctx context.Context, title string) ([]models.Sach, error) {
-	conn, err := r.GetConnection(r.config.Sites[0].SiteID)
-	if err != nil {
-		return nil, err
-	}
-	query := "SELECT ISBN, TenSach, TacGia FROM SACH WHERE TenSach LIKE ?"
-	rows, err := conn.QueryContext(ctx, query, "%"+title+"%")
+	// Call the stored procedure for system-wide book search
+	query := "EXEC sp_TimKiemSachToanHeThong @TenSach = ?, @TacGia = ?, @ISBN = ?"
+	rows, err := conn.Query(query,
+		sql.NullString{String: tenSach, Valid: tenSach != ""},
+		sql.NullString{String: tacGia, Valid: tacGia != ""},
+		sql.NullString{String: isbn, Valid: isbn != ""})
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var books []models.Sach
+
+	var results []models.BookSearchResult
 	for rows.Next() {
-		var book models.Sach
-		err := rows.Scan(&book.ISBN, &book.TenSach, &book.TacGia)
+		var result models.BookSearchResult
+		var maCN string
+		var tenCN string
+
+		err := rows.Scan(
+			&result.Sach.ISBN,
+			&result.Sach.TenSach,
+			&result.Sach.TacGia,
+			&maCN,
+			&tenCN,
+			&result.SoLuongCo,
+		)
 		if err != nil {
 			return nil, err
 		}
-		books = append(books, book)
-	}
-	return books, nil
-}
 
-func (r *BookRepository) getBookAvailabilityAllSites(ctx context.Context, books []models.Sach) (map[string]map[string]int, error) {
-	connections, err := r.GetAllSiteConnections()
-	if err != nil {
-		return nil, err
-	}
-	results := make(map[string]map[string]int)
-	var wg sync.WaitGroup
-	mu := &sync.Mutex{}
-	for _, book := range books {
-		results[book.ISBN] = make(map[string]int)
-		for siteID, conn := range connections {
-			wg.Add(1)
-			go func(isbn, siteID string, conn *sql.DB) {
-				defer wg.Done()
-				query := "SELECT COUNT(*) FROM QUYENSACH WHERE ISBN = ? AND TinhTrang = N'Có sẵn'"
-				var count int
-				err := conn.QueryRowContext(ctx, query, isbn).Scan(&count)
-				mu.Lock()
-				results[isbn][siteID] = count
-				mu.Unlock()
-				_ = err // ignore error for demo
-			}(book.ISBN, siteID, conn)
+		// Group by book and aggregate branch info
+		found := false
+		for i := range results {
+			if results[i].Sach.ISBN == result.Sach.ISBN {
+				results[i].ChiNhanh = append(results[i].ChiNhanh, models.ChiNhanh{
+					MaCN:  maCN,
+					TenCN: tenCN,
+				})
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			result.ChiNhanh = []models.ChiNhanh{{MaCN: maCN, TenCN: tenCN}}
+			results = append(results, result)
 		}
 	}
-	wg.Wait()
+
 	return results, nil
 }
 
-func (r *BookRepository) getBranchInfo(ctx context.Context, siteID string) (models.ChiNhanh, error) {
+// GetBookByISBN gets book details by ISBN
+func (r *BookRepository) GetBookByISBN(isbn, siteID string) (*models.Sach, error) {
 	conn, err := r.GetConnection(siteID)
 	if err != nil {
-		return models.ChiNhanh{}, err
+		return nil, err
 	}
-	query := "SELECT MaCN, TenCN, DiaChi FROM CHINHANH WHERE MaCN = ?"
-	var branch models.ChiNhanh
-	err = conn.QueryRowContext(ctx, query, siteID).Scan(&branch.MaCN, &branch.TenCN, &branch.DiaChi)
-	return branch, err
+
+	query := "SELECT ISBN, TenSach, TacGia FROM SACH WHERE ISBN = ?"
+	var book models.Sach
+	err = conn.QueryRow(query, isbn).Scan(&book.ISBN, &book.TenSach, &book.TacGia)
+	if err != nil {
+		return nil, err
+	}
+
+	return &book, nil
+}
+
+// GetAvailableBookCopy gets an available copy of a book at a specific site
+func (r *BookRepository) GetAvailableBookCopy(isbn, siteID string) (*models.QuyenSach, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		SELECT TOP 1 MaQuyenSach, ISBN, MaCN, TinhTrang 
+		FROM QUYENSACH 
+		WHERE ISBN = ? AND MaCN = ? AND TinhTrang = N'Có sẵn'
+	`
+
+	var copy models.QuyenSach
+	err = conn.QueryRow(query, isbn, siteID).Scan(
+		&copy.MaQuyenSach, &copy.ISBN, &copy.MaCN, &copy.TinhTrang)
+	if err != nil {
+		return nil, err
+	}
+
+	return &copy, nil
 }

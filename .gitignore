@@ -13,21 +13,21 @@
 !**/macos/Flutter/
 !**/windows/flutter/
 
-# IDE & Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Generated files (code generation)
+**/*.g.dart
+**/*.freezed.dart
+**/*.config.dart
+**/*.chopper.dart
+**/*.gr.dart
 
-# Generated files
+# Flutter dependencies and tools
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
-pubspec.lock
+.metadata
 
 # Coverage reports
 coverage/
@@ -56,7 +56,7 @@ analysis_options.yaml.bak
 # Go Backend Specific
 # ===================================
 
-# Go build outputs
+# Go build outputs and binaries
 *.exe
 *.exe~
 *.dll
@@ -65,6 +65,11 @@ analysis_options.yaml.bak
 **/bin/
 **/dist/
 
+# Project binaries (site executables)
+library_distributed_server/coordinator
+library_distributed_server/site-q1
+library_distributed_server/site-q3
+
 # Go test binary, built with `go test -c`
 *.test
 
@@ -72,8 +77,7 @@ analysis_options.yaml.bak
 *.out
 *.prof
 
-# Go modules
-go.sum
+# Go modules (go.sum should be committed)
 go.work
 go.work.sum
 
@@ -99,6 +103,7 @@ __debug_bin
 .env.*.local
 config.local.yaml
 config.local.json
+!.env.example
 
 # Connection strings & sensitive data
 **/secrets/
@@ -110,6 +115,28 @@ connection_strings.json
 *.key
 *.crt
 *.cert
+
+# ===================================
+# IDE & Editor Files
+# ===================================
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Other editors
+*.swp
+*.swo
+*~
 
 # ===================================
 # System & OS
@@ -144,8 +171,7 @@ $RECYCLE.BIN/
 # ─────────────────────────────────────────────────────────
 # Generated files in library_distributed_app
 # ─────────────────────────────────────────────────────────
-/library_distributed_app/lib/gen/
-/library_distributed_app/**/*.g.dart
+# Note: Removing this section as it's already covered above
 
 # ===================================
 # Development & Debug
@@ -278,7 +304,6 @@ library_distributed_server/*.dylib
 library_distributed_server/*.test
 library_distributed_server/*.out
 library_distributed_server/*.prof
-library_distributed_server/go.sum
 library_distributed_server/go.work
 library_distributed_server/go.work.sum
 library_distributed_server/vendor/

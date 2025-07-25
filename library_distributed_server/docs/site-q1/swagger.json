@@ -1,0 +1,1259 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a distributed library management system with horizontal fragmentation and full replication",
+        "title": "Distributed Library Management System API - Site Q1",
+        "termsOfService": "N/A",
+        "contact": {
+            "name": "API Support",
+            "email": "dev@library.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8081",
+    "basePath": "/",
+    "paths": {
+        "/api/coordinator/transfer-book": {
+            "post": {
+                "description": "Transfer a book copy from one site to another using distributed transaction coordination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Coordinator"
+                ],
+                "summary": "Transfer book between sites using 2PC",
+                "parameters": [
+                    {
+                        "description": "Book transfer request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.TransferBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book transferred successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.TransferBookResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to transfer book",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/manager/books/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search for books across all sites in the distributed system (Manager only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Search books system-wide",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book title search term",
+                        "name": "tenSach",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Author search term",
+                        "name": "tacGia",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ISBN search term",
+                        "name": "isbn",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BookSearchResult"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Missing search parameters",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Manager role required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/manager/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get comprehensive statistics across all sites in the distributed system (Manager only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get system statistics",
+                "responses": {
+                    "200": {
+                        "description": "System statistics retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.SystemStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Manager role required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve system statistics",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/book-copies": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all book copies available at the current site (fragmented data)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Get book copies at site",
+                "responses": {
+                    "200": {
+                        "description": "Book copies retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BookCopyResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/books": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all books available in the library system (replicated data)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Get all books",
+                "responses": {
+                    "200": {
+                        "description": "Books retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Sach"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/books/{isbn}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a specific book by its ISBN",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Get book by ISBN",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book ISBN",
+                        "name": "isbn",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Sach"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ISBN parameter",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/books/{isbn}/available": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get an available copy of a book at the current site",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Get available book copy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book ISBN",
+                        "name": "isbn",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available copy found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.BookCopyResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ISBN parameter",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No available copy found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/borrow": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new book borrowing transaction (Librarian only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Borrowing"
+                ],
+                "summary": "Create borrow transaction",
+                "parameters": [
+                    {
+                        "description": "Borrow request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateBorrowRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Borrow record created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.BorrowResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create borrow record",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/borrows": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all borrow records for the current site (Librarian only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Borrowing"
+                ],
+                "summary": "Get borrow records",
+                "responses": {
+                    "200": {
+                        "description": "Borrow records retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BorrowResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve borrow records",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/readers/{maDG}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a reader at the current site",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Get reader information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reader ID",
+                        "name": "maDG",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reader information retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ReaderInfoResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Reader ID is required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Reader not found at this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/return/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Return a borrowed book and update its status (Librarian only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Borrowing"
+                ],
+                "summary": "Return borrowed book",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Borrow transaction ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Return details (optional)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReturnBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book returned successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid borrow ID format",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to return book",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate user and return JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "auth.LoginRequest": {
+            "description": "User login credentials",
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "description": "Password",
+                    "type": "string",
+                    "example": "password123"
+                },
+                "username": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "thuthu01"
+                }
+            }
+        },
+        "auth.LoginResponse": {
+            "description": "Successful login response with JWT token",
+            "type": "object",
+            "properties": {
+                "maCN": {
+                    "description": "Branch code (only for THUTHU)",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "role": {
+                    "description": "User role",
+                    "type": "string",
+                    "enum": [
+                        "THUTHU",
+                        "QUANLY"
+                    ],
+                    "example": "THUTHU"
+                },
+                "token": {
+                    "description": "JWT access token",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "userID": {
+                    "description": "User identifier",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "username": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "thuthu01"
+                }
+            }
+        },
+        "main.TransferBookRequest": {
+            "type": "object",
+            "required": [
+                "fromSite",
+                "maQuyenSach",
+                "toSite"
+            ],
+            "properties": {
+                "fromSite": {
+                    "description": "Source site ID",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "maQuyenSach": {
+                    "description": "Book copy ID to transfer",
+                    "type": "string",
+                    "example": "QS001"
+                },
+                "toSite": {
+                    "description": "Destination site ID",
+                    "type": "string",
+                    "example": "Q3"
+                }
+            }
+        },
+        "models.BookCopyResponse": {
+            "description": "Book copy information with book details",
+            "type": "object",
+            "properties": {
+                "quyenSach": {
+                    "description": "Book copy information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.QuyenSach"
+                        }
+                    ]
+                },
+                "sach": {
+                    "description": "Book information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Sach"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.BookSearchResult": {
+            "description": "Book search result with availability across branches",
+            "type": "object",
+            "properties": {
+                "chiNhanh": {
+                    "description": "Available branches",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChiNhanh"
+                    }
+                },
+                "sach": {
+                    "description": "Book information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Sach"
+                        }
+                    ]
+                },
+                "soLuongCo": {
+                    "description": "Total available copies",
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "models.BorrowResponse": {
+            "description": "Borrow transaction with related information",
+            "type": "object",
+            "properties": {
+                "docGia": {
+                    "description": "Reader information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DocGia"
+                        }
+                    ]
+                },
+                "phieuMuon": {
+                    "description": "Borrow transaction",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PhieuMuon"
+                        }
+                    ]
+                },
+                "sach": {
+                    "description": "Book information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Sach"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.ChiNhanh": {
+            "description": "Branch information (fully replicated across all sites)",
+            "type": "object",
+            "required": [
+                "maCN",
+                "tenCN"
+            ],
+            "properties": {
+                "diaChi": {
+                    "description": "Branch address",
+                    "type": "string",
+                    "example": "123 Nguyễn Huệ, Q1, TP.HCM"
+                },
+                "maCN": {
+                    "description": "Branch code",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "tenCN": {
+                    "description": "Branch name",
+                    "type": "string",
+                    "example": "Thư Viện Quận 1"
+                }
+            }
+        },
+        "models.CreateBorrowRequest": {
+            "description": "Request payload for creating a borrow transaction",
+            "type": "object",
+            "required": [
+                "maDG",
+                "maQuyenSach"
+            ],
+            "properties": {
+                "maDG": {
+                    "description": "Reader ID",
+                    "type": "string",
+                    "example": "DG001"
+                },
+                "maQuyenSach": {
+                    "description": "Book copy ID",
+                    "type": "string",
+                    "example": "QS001"
+                }
+            }
+        },
+        "models.DocGia": {
+            "description": "Reader information (fragmented by registration branch)",
+            "type": "object",
+            "required": [
+                "hoTen",
+                "maCNDangKy",
+                "maDG"
+            ],
+            "properties": {
+                "hoTen": {
+                    "description": "Reader name",
+                    "type": "string",
+                    "example": "Nguyễn Văn B"
+                },
+                "maCNDangKy": {
+                    "description": "Registration branch",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "maDG": {
+                    "description": "Reader ID",
+                    "type": "string",
+                    "example": "DG001"
+                }
+            }
+        },
+        "models.ErrorResponse": {
+            "description": "Generic error response",
+            "type": "object",
+            "properties": {
+                "details": {
+                    "description": "Error details (optional)"
+                },
+                "error": {
+                    "description": "Error message",
+                    "type": "string",
+                    "example": "Bad Request"
+                }
+            }
+        },
+        "models.PhieuMuon": {
+            "description": "Borrow transaction (fragmented by branch)",
+            "type": "object",
+            "required": [
+                "maCN",
+                "maDG",
+                "maQuyenSach"
+            ],
+            "properties": {
+                "maCN": {
+                    "description": "Branch code",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "maDG": {
+                    "description": "Reader ID",
+                    "type": "string",
+                    "example": "DG001"
+                },
+                "maPM": {
+                    "description": "Borrow ID (auto-generated)",
+                    "type": "integer",
+                    "example": 1
+                },
+                "maQuyenSach": {
+                    "description": "Book copy ID",
+                    "type": "string",
+                    "example": "QS001"
+                },
+                "ngayMuon": {
+                    "description": "Borrow date",
+                    "type": "string",
+                    "example": "2025-01-15T10:00:00Z"
+                },
+                "ngayTra": {
+                    "description": "Return date (null if not returned)",
+                    "type": "string",
+                    "example": "2025-01-20T14:00:00Z"
+                }
+            }
+        },
+        "models.QuyenSach": {
+            "description": "Book copy information (fragmented by branch)",
+            "type": "object",
+            "required": [
+                "isbn",
+                "maCN",
+                "maQuyenSach"
+            ],
+            "properties": {
+                "isbn": {
+                    "description": "Book ISBN",
+                    "type": "string",
+                    "example": "978-0-123456-78-9"
+                },
+                "maCN": {
+                    "description": "Branch code",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "maQuyenSach": {
+                    "description": "Book copy ID",
+                    "type": "string",
+                    "example": "QS001"
+                },
+                "tinhTrang": {
+                    "description": "Book status",
+                    "type": "string",
+                    "enum": [
+                        "Có sẵn",
+                        "Đang mượn",
+                        "Bị hỏng"
+                    ],
+                    "example": "Có sẵn"
+                }
+            }
+        },
+        "models.ReaderInfoResponse": {
+            "description": "Reader information with borrow history",
+            "type": "object",
+            "properties": {
+                "docGia": {
+                    "description": "Reader information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DocGia"
+                        }
+                    ]
+                },
+                "phieuMuons": {
+                    "description": "Borrow history",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PhieuMuon"
+                    }
+                }
+            }
+        },
+        "models.ReturnBookRequest": {
+            "description": "Request payload for returning a borrowed book",
+            "type": "object",
+            "properties": {
+                "maQuyenSach": {
+                    "description": "Book copy ID (optional)",
+                    "type": "string",
+                    "example": "QS001"
+                },
+                "ngayTra": {
+                    "description": "Return date",
+                    "type": "string",
+                    "example": "2025-01-20T14:00:00Z"
+                }
+            }
+        },
+        "models.Sach": {
+            "description": "Book information (fully replicated across all sites)",
+            "type": "object",
+            "required": [
+                "isbn",
+                "tenSach"
+            ],
+            "properties": {
+                "isbn": {
+                    "description": "Book ISBN",
+                    "type": "string",
+                    "example": "978-0-123456-78-9"
+                },
+                "tacGia": {
+                    "description": "Author name",
+                    "type": "string",
+                    "example": "Nguyễn Văn A"
+                },
+                "tenSach": {
+                    "description": "Book title",
+                    "type": "string",
+                    "example": "Lập trình Go"
+                }
+            }
+        },
+        "models.SiteStats": {
+            "description": "Site-specific statistics",
+            "type": "object",
+            "properties": {
+                "booksOnLoan": {
+                    "description": "Books currently on loan",
+                    "type": "integer",
+                    "example": 75
+                },
+                "siteID": {
+                    "description": "Site identifier",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "totalBooks": {
+                    "description": "Total books in this site",
+                    "type": "integer",
+                    "example": 500
+                },
+                "totalReaders": {
+                    "description": "Total registered readers",
+                    "type": "integer",
+                    "example": 200
+                }
+            }
+        },
+        "models.SuccessResponse": {
+            "description": "Generic success response",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Response data (optional)"
+                },
+                "message": {
+                    "description": "Success message",
+                    "type": "string",
+                    "example": "Operation completed successfully"
+                },
+                "success": {
+                    "description": "Operation success status",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.SystemStats": {
+            "description": "Distributed system statistics",
+            "type": "object",
+            "properties": {
+                "statsBySite": {
+                    "description": "Statistics by site",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.SiteStats"
+                    }
+                },
+                "totalBooksOnLoan": {
+                    "description": "Total books on loan across all sites",
+                    "type": "integer",
+                    "example": 150
+                }
+            }
+        },
+        "models.TransferBookResponse": {
+            "description": "Response after successful book transfer using 2PC protocol",
+            "type": "object",
+            "properties": {
+                "coordinator": {
+                    "description": "Coordinator service",
+                    "type": "string",
+                    "example": "Distributed Transaction Coordinator"
+                },
+                "fromSite": {
+                    "description": "Source site ID",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "maQuyenSach": {
+                    "description": "Transferred book copy ID",
+                    "type": "string",
+                    "example": "QS001"
+                },
+                "message": {
+                    "description": "Success message",
+                    "type": "string",
+                    "example": "Book transferred successfully using 2PC protocol"
+                },
+                "protocol": {
+                    "description": "Protocol used",
+                    "type": "string",
+                    "example": "Two-Phase Commit (2PC)"
+                },
+                "toSite": {
+                    "description": "Destination site ID",
+                    "type": "string",
+                    "example": "Q3"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
