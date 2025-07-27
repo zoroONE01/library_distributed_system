@@ -32,6 +32,10 @@ start:
 	@echo ""
 	@echo "Press Ctrl+C to stop all services"
 	@echo ""
+	@echo "Swagger UI endpoints:"
+	@echo "- Site Q1 Swagger: http://localhost:8081/swagger/index.html"
+	@echo "- Site Q3 Swagger: http://localhost:8083/swagger/index.html"
+	@echo "- Coordinator Swagger: http://localhost:8080/swagger/index.html"
 	cd $(BACKEND_DIR) && make run
 
 

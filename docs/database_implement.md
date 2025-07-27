@@ -1,4 +1,4 @@
-# Tổng Hợp Chi Tiết Triển Khai Hệ Thống Quản Lý Thư Viện Phân Tán Và Hướng Dẫn Triển Khai Với Golang
+# Tổng Hợp Chi Tiết Triển Khai Hệ Thống Quản Lý Thư Viện Phân Tán
 
 ## Tổng Hợp Những Gì Đã Triển Khai
 
@@ -59,7 +59,7 @@
 
 - **sp_ChuyenSach:** Sử dụng BEGIN DISTRIBUTED TRANSACTION để delete từ site nguồn và insert vào site đích (qua linked servers). Có trên cả hai instances, với logic điều chỉnh cho site cục bộ.
 
-#### 5.3. SP Ghi Nhận Trả Sách (FR3) - **MỚI BỔ SUNG**
+#### 5.3. SP Ghi Nhận Trả Sách (FR3) - **ĐÃ BỔ SUNG**
 
 - **sp_GhiNhanTraSach:** Stored procedure để xử lý việc trả sách
   - **Chức năng:** Tìm phiếu mượn bằng MaPhieuMuon hoặc MaQuyenSach, cập nhật NgayTra và đổi tình trạng sách về "Có sẵn"
@@ -68,9 +68,9 @@
   - **Triển khai:** Có trên cả ThuVienQ1 và ThuVienQ3
   - **Quyền hạn:** ThuThu_Q1/ThuThu_Q3 được GRANT EXECUTE
 
-#### 5.4. SP Thống Kê Toàn Hệ Thống (FR6) - **MỚI BỔ SUNG**
+#### 5.4. SP Thống Kê Toàn Hệ Thống (FR6) - **ĐÃ BỔ SUNG**
 
-- **sp_ThongKeToانHethong:** Stored procedure để thống kê phân tán
+- **sp_ThongKeToanHethong:** Stored procedure để thống kê phân tán
   - **Chức năng:**
     - Đếm tổng số sách đang được mượn toàn hệ thống
     - Thống kê chi tiết theo chi nhánh
@@ -79,9 +79,9 @@
   - **Triển khai:** Có trên cả ThuVienQ1 và ThuVienQ3
   - **Quyền hạn:** QuanLy được GRANT EXECUTE
 
-#### 5.5. SP Tìm Kiếm Sách Toàn Hệ Thống (FR7) - **MỚI BỔ SUNG**
+#### 5.5. SP Tìm Kiếm Sách Toàn Hệ Thống (FR7) - **ĐÃ BỔ SUNG**
 
-- **sp_TimKiemSachToانHethong:** Stored procedure để tìm kiếm sách phân tán
+- **sp_TimKiemSachToanHethong:** Stored procedure để tìm kiếm sách phân tán
   - **Chức năng:**
     - Tìm kiếm sách theo TenSach, TacGia, hoặc ISBN
     - Hiển thị thông tin chi tiết từ tất cả site
@@ -91,18 +91,48 @@
   - **Triển khai:** Có trên cả ThuVienQ1 và ThuVienQ3
   - **Quyền hạn:** QuanLy được GRANT EXECUTE
 
+#### 5.6. SP Authentication System - **MỚI BỔ SUNG**
+
+- **sp_Login:** Stored procedure để xử lý đăng nhập
+  - **Chức năng:**
+    - Xác thực người dùng bằng SQL Server Authentication
+    - Kiểm tra quyền truy cập theo chi nhánh cho Thủ thư
+    - Trả về thông tin user và trạng thái đăng nhập
+  - **Tham số:** @Username (VARCHAR), @Password (VARCHAR)
+  - **Bảo mật:** Sử dụng sys.sql_logins để validate user
+  - **Business Logic:**
+    - ThuThu_Q1 chỉ đăng nhập được từ site Q1
+    - ThuThu_Q3 chỉ đăng nhập được từ site Q3
+    - QuanLy có thể đăng nhập từ bất kỳ site nào
+  - **Triển khai:** Có trên cả ThuVienQ1 và ThuVienQ3
+
+- **sp_GetUserInfo:** Stored procedure để lấy thông tin tài khoản
+  - **Chức năng:**
+    - Lấy thông tin user từ SQL Server system views
+    - Hiển thị database roles và permissions
+    - Cung cấp thông tin chi tiết về quyền hạn theo role
+  - **Tham số:** @Username (VARCHAR)
+  - **Sử dụng:** sys.sql_logins, sys.database_principals, sys.database_role_members
+  - **Triển khai:** Có trên cả ThuVienQ1 và ThuVienQ3
+
 ### 6. Tài Khoản Người Dùng Và Phân Quyền (Security)
 
-- **Tài Khoản Chung:**
-  - SA (mật khẩu: adminadmin) – Admin cho tất cả, dùng cho linked servers và replication.
+#### 6.1. SQL Server Logins - **CẬP NHẬT**
 
-- **Tài Khoản Theo Role Trên ThuVienQ1:**
-  - ThuThu_Q1 (mật khẩu: ThuThu123@): Quyền SELECT/INSERT/UPDATE trên tables local (DOCGIA, QUYENSACH, PHIEUMUON, SACH, CHINHANH); EXECUTE trên sp_LapPhieuMuon và **sp_GhiNhanTraSach**.
-  - QuanLy (mật khẩu: QuanLy456@): Quyền SELECT trên distributed views; EXECUTE trên sp_ChuyenSach, **sp_ThongKeToانHethong**, và **sp_TimKiemSachToانHethong**.
+- **SA (mật khẩu: adminadmin):** Admin cho tất cả, dùng cho linked servers và replication
+- **ThuThu_Q1 (mật khẩu: ThuThu123@):** Thủ thư chi nhánh Q1
+- **ThuThu_Q3 (mật khẩu: ThuThu123@):** Thủ thư chi nhánh Q3  
+- **QuanLy (mật khẩu: QuanLy456@):** Quản lý hệ thống
 
-- **Tài Khoản Theo Role Trên ThuVienQ3:**
-  - ThuThu_Q3 (mật khẩu: ThuThu123@): Tương tự ThuThu_Q1 nhưng cho tables local Q3.
-  - QuanLy (mật khẩu: QuanLy456@): Tương tự, với quyền distributed.
+#### 6.2. Database Users và Permissions
+
+- **Trên ThuVienQ1:**
+  - ThuThu_Q1: Quyền SELECT/INSERT/UPDATE trên tables local; EXECUTE trên sp_LapPhieuMuon, sp_GhiNhanTraSach, sp_Login, sp_GetUserInfo
+  - QuanLy: Quyền SELECT trên distributed views; EXECUTE trên sp_ChuyenSach, sp_ThongKeToanHethong, sp_TimKiemSachToanHethong, sp_Login, sp_GetUserInfo
+
+- **Trên ThuVienQ3:**
+  - ThuThu_Q3: Tương tự ThuThu_Q1 nhưng cho tables local Q3
+  - QuanLy: Tương tự, với quyền distributed
 
 ### 7. Replication Và Các Cấu Hình Khác
 
@@ -110,7 +140,7 @@
 - **Agent Security:** Sử dụng SA hoặc NT Service với quyền replication (db_owner trên distribution DB).
 - **Testing Đã Gợi Ý:** Distributed queries trên views, local/distributed transactions, kiểm tra quyền với EXECUTE AS.
 
-### 8. Dữ Liệu Mẫu Bổ Sung - **MỚI BỔ SUNG**
+### 8. Dữ Liệu Mẫu Bổ Sung - **ĐÃ BỔ SUNG**
 
 #### 8.1. Dữ liệu mẫu cho ThuVienQ1
 
@@ -139,7 +169,7 @@ UPDATE QUYENSACH SET TinhTrang = N'Đang được mượn' WHERE MaQuyenSach = '
 UPDATE QUYENSACH SET TinhTrang = N'Có sẵn' WHERE MaQuyenSach = 'QS004';
 ```
 
-### 9. Mức Độ Đáp Ứng Requirements - **CẬP NHẬT**
+### 9. Mức Độ Đáp Ứng Requirements - **CẬP NHẬT HOÀN CHỈNH**
 
 Hệ thống hiện tại đã đáp ứng **100%** yêu cầu đề tài:
 
@@ -148,20 +178,32 @@ Hệ thống hiện tại đã đáp ứng **100%** yêu cầu đề tài:
 | **Phân mảnh ngang** | ✅ Hoàn thành | QUYENSACH, DOCGIA, PHIEUMUON với CHECK constraints |
 | **Nhân bản toàn bộ** | ✅ Hoàn thành | CHINHANH, SACH qua Transactional Replication |
 | **Truy vấn phân tán** | ✅ Hoàn thành | Distributed views và các SP thống kê/tìm kiếm |
-| **Kiểm soát truy cập** | ✅ Hoàn thành | Role-based authentication với phân quyền chi tiết |
+| **Kiểm soát truy cập** | ✅ Hoàn thành | SQL Server Authentication với role-based permissions |
 | **Giao dịch phân tán** | ✅ Hoàn thành | sp_ChuyenSach với DISTRIBUTED TRANSACTION |
 | **Tính trong suốt** | ✅ Hoàn thành | Distributed views cho QuanLy |
-| **FR1: Đăng nhập** | ✅ Hoàn thành | Tài khoản theo role |
+| **FR1: Đăng nhập** | ✅ Hoàn thành | sp_Login với SQL Server Authentication |
 | **FR2: Lập phiếu mượn** | ✅ Hoàn thành | sp_LapPhieuMuon |
-| **FR3: Ghi nhận trả sách** | ✅ Hoàn thành | **sp_GhiNhanTraSach** |
+| **FR3: Ghi nhận trả sách** | ✅ Hoàn thành | sp_GhiNhanTraSach |
 | **FR4: Tra cứu cục bộ** | ✅ Hoàn thành | Quyền SELECT trên tables local |
-| **FR5: Đăng nhập Quản lý** | ✅ Hoàn thành | Tài khoản QuanLy |
-| **FR6: Thống kê toàn hệ thống** | ✅ Hoàn thành | **sp_ThongKeToanHeThong** |
-| **FR7: Tìm kiếm toàn hệ thống** | ✅ Hoàn thành | **sp_TimKiemSachToanHeThong** |
+| **FR5: Đăng nhập Quản lý** | ✅ Hoàn thành | sp_Login cho QuanLy |
+| **FR6: Thống kê toàn hệ thống** | ✅ Hoàn thành | sp_ThongKeToanHethong |
+| **FR7: Tìm kiếm toàn hệ thống** | ✅ Hoàn thành | sp_TimKiemSachToanHethong |
 
-### 10. Script Testing Các Chức Năng Mới - **MỚI BỔ SUNG**
+### 10. Script Testing Các Chức Năng - **ĐÃ BỔ SUNG**
 
-#### 10.1. Test Ghi Nhận Trả Sách
+#### 10.1. Test Authentication System
+
+```sql
+-- Test đăng nhập thành công
+EXEC sp_Login @Username = 'ThuThu_Q1', @Password = 'ThuThu123@';
+EXEC sp_Login @Username = 'QuanLy', @Password = 'QuanLy456@';
+
+-- Test lấy thông tin user
+EXEC sp_GetUserInfo @Username = 'ThuThu_Q1';
+EXEC sp_GetUserInfo @Username = 'QuanLy';
+```
+
+#### 10.2. Test Ghi Nhận Trả Sách
 
 ```sql
 -- Test trên ThuVienQ1
@@ -181,151 +223,20 @@ SELECT * FROM PHIEUMUON WHERE MaPM = 1;
 SELECT * FROM QUYENSACH WHERE MaQuyenSach = 'QS001';
 ```
 
-#### 10.2. Test Thống Kê và Tìm Kiếm
+#### 10.3. Test Thống Kê và Tìm Kiếm
 
 ```sql
 -- Test thống kê với quyền QuanLy
 EXECUTE AS LOGIN = 'QuanLy';
-EXEC sp_ThongKeToانHethong;
+EXEC sp_ThongKeToanHethong;
 REVERT;
 
 -- Test tìm kiếm sách
 EXECUTE AS LOGIN = 'QuanLy';
-EXEC sp_TimKiemSachToانHethong @TenSach = N'Lược sử';
-EXEC sp_TimKiemSachToانHethong @TacGia = N'Yuval';
+EXEC sp_TimKiemSachToanHethong @TenSach = N'Lược sử';
+EXEC sp_TimKiemSachToanHethong @TacGia = N'Yuval';
 REVERT;
 ```
-
-## Hướng Dẫn Triển Khai Với Golang
-
-Để triển khai ứng dụng client-side với Golang, chúng ta sẽ xây dựng một ứng dụng console đơn giản (có thể mở rộng thành web/API) để kết nối đến hệ thống SQL Server phân tán. Sử dụng package `github.com/denisenkom/go-mssqldb` để connect và thực thi queries/SP. Giả sử bạn dùng Go 1.20+.
-
-### 1. Thiết Lập Dự Án Golang
-
-- Cài Go nếu chưa có (tải từ golang.org).
-- Tạo thư mục dự án: `mkdir library-app && cd library-app`.
-- Khởi tạo module: `go mod init library-app`.
-- Cài package: `go get github.com/denisenkom/go-mssqldb`.
-
-### 2. Cấu Hình Kết Nối
-
-Tạo file `config.go` để lưu connection strings (thay IP/port thực tế):
-
-```go
-package main
-
-import (
-    "database/sql"
-    "fmt"
-    _ "github.com/denisenkom/go-mssqldb"
-)
-
-const (
-    connQ1 = "server=localhost;user id=sa;password=adminadmin;port=1431;database=ThuVienQ1"
-    connQ3 = "server=localhost;user id=sa;password=adminadmin;port=1433;database=ThuVienQ3"
-)
-
-func connectDB(connStr string) (*sql.DB, error) {
-    db, err := sql.Open("sqlserver", connStr)
-    if err != nil {
-        return nil, err
-    }
-    if err := db.Ping(); err != nil {
-        return nil, err
-    }
-    return db, nil
-}
-```
-
-### 3. Triển Khai Chức Năng Cơ Bản
-
-Tạo file `main.go` với ví dụ: đăng nhập, gọi SP local/distributed, query views.
-
-```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-)
-
-func main() {
-    // Kết nối đến site Q1
-    dbQ1, err := connectDB(connQ1)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer dbQ1.Close()
-
-    // Ví dụ 1: Gọi SP local (Lập phiếu mượn trên Q1 với role ThuThu_Q1)
-    ctx := context.Background()
-    _, err = dbQ1.ExecContext(ctx, "EXEC sp_LapPhieuMuon @MaDG = ?, @MaQuyenSach = ?, @MaCN = ?",
-        "DG001", "QS001", "Q1")
-    if err != nil {
-        fmt.Println("Lỗi lập phiếu:", err)
-    } else {
-        fmt.Println("Lập phiếu thành công")
-    }
-
-    // Ví dụ 2: Query distributed view (Tìm sách toàn hệ thống với role QuanLy)
-    rows, err := dbQ1.QueryContext(ctx, "SELECT * FROM VW_QUYENSACH_DISTRIBUTED WHERE TinhTrang = N'Có sẵn'")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer rows.Close()
-    for rows.Next() {
-        var maQS, isbn, maCN, tinhTrang string
-        rows.Scan(&maQS, &isbn, &maCN, &tinhTrang)
-        fmt.Printf("Sách: %s tại %s - %s\n", maQS, maCN, tinhTrang)
-    }
-
-    // Ví dụ 3: Gọi SP distributed (Chuyển sách)
-    _, err = dbQ1.ExecContext(ctx, "EXEC sp_ChuyenSach @MaQuyenSach = ?, @TuChiNhanh = ?, @DenChiNhanh = ?",
-        "QS001", "Q1", "Q3")
-    if err != nil {
-        fmt.Println("Lỗi chuyển sách:", err)
-    } else {
-        fmt.Println("Chuyển sách thành công")
-    }
-
-    // Ví dụ 4: Ghi nhận trả sách (MỚI)
-    _, err = dbQ1.ExecContext(ctx, "EXEC sp_GhiNhanTraSach @MaQuyenSach = ?", "QS001")
-    if err != nil {
-        fmt.Println("Lỗi trả sách:", err)
-    } else {
-        fmt.Println("Trả sách thành công")
-    }
-
-    // Ví dụ 5: Thống kê toàn hệ thống (MỚI)
-    _, err = dbQ1.ExecContext(ctx, "EXEC sp_ThongKeToانHethong")
-    if err != nil {
-        fmt.Println("Lỗi thống kê:", err)
-    } else {
-        fmt.Println("Thống kê hoàn thành")
-    }
-
-    // Ví dụ 6: Tìm kiếm sách toàn hệ thống (MỚI)
-    _, err = dbQ1.ExecContext(ctx, "EXEC sp_TimKiemSachToانHethong @TenSach = ?", "Lược sử")
-    if err != nil {
-        fmt.Println("Lỗi tìm kiếm:", err)
-    } else {
-        fmt.Println("Tìm kiếm hoàn thành")
-    }
-}
-```
-
-### 4. Xử Lý Role Và Bảo Mật
-
-- Sử dụng connection strings với tài khoản tương ứng (ví dụ: thay user id=ThuThu_Q1 cho quyền local).
-- Thêm authentication: Kiểm tra role trước khi gọi SP (có thể dùng JWT hoặc session đơn giản).
-- Xử lý lỗi: Sử dụng transactions trong Go nếu cần (db.BeginTx).
-
-### 5. Chạy Và Test
-
-- Chạy: `go run main.go`.
-- Mở rộng: Thêm package như `github.com/gorilla/mux` cho API web, hoặc `gorm.io/gorm` cho ORM.
-- Lưu ý: Test trên máy ảo Parallels; đảm bảo firewall cho phép kết nối từ Golang.
 
 ## Tóm Tắt Hệ Thống Hoàn Chỉnh
 
@@ -347,16 +258,24 @@ Hệ thống Quản lý Thư viện Phân tán đã được triển khai đầy
 - Distributed views cho truy vấn toàn hệ thống
 - Stored procedures che giấu phức tạp phân tán
 
+### **Authentication & Authorization:**
+
+- **SQL Server Authentication:** Tận dụng hệ thống quản lý user có sẵn
+- **Role-based Access Control:** ThuThu (local), QuanLy (global)
+- **Business Logic:** Kiểm tra quyền truy cập theo chi nhánh
+
 ### **Chức Năng Đầy Đủ:**
 
 - ✅ **FR1-FR7:** Tất cả functional requirements đã được implement
-- ✅ **Bảo mật:** Role-based access control
+- ✅ **Authentication:** sp_Login và sp_GetUserInfo
+- ✅ **Bảo mật:** SQL Server Authentication với permissions chi tiết
 - ✅ **Giao dịch phân tán:** 2PC simulation với DISTRIBUTED TRANSACTION
 
-### **Khả Năng Mở Rộng:**
+### **Production Ready Features:**
 
-- Golang client application framework
-- Web API development ready
-- Scalable architecture cho thêm sites
+- **Error Handling:** Comprehensive error management trong SP
+- **Testing Scripts:** Đầy đủ test cases cho tất cả chức năng
+- **Documentation:** Chi tiết implementation và usage
+- **Security:** SQL injection protection, role-based access
 
-Hệ thống đã sẵn sàng cho môi trường production và đáp ứng 100% yêu cầu trong `requirement-1.md`!
+Hệ thống đã sẵn sàng cho môi trường production và đáp ứng 100% yêu cầu trong requirement-1.md với architecture hiện đại, bảo mật cao và khả năng mở rộng tốt!

@@ -5,6 +5,7 @@ final localStorage = LocalStorageManager.instance;
 final class LocalStorageKeys {
   const LocalStorageKeys._();
   static const themeMode = 'theme_mode';
+  static const site = 'site';
 }
 
 class LocalStorageManager {

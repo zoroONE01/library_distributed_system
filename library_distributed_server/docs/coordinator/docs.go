@@ -720,7 +720,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user and return JWT token",
+                "description": "Authenticate user using stored procedure and return JWT token",
                 "consumes": [
                     "application/json"
                 ],
@@ -757,6 +757,80 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logout user (invalidate token on client side)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User logout",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about the currently authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get current user profile",
+                "responses": {
+                    "200": {
+                        "description": "User profile information",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserInfo"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -1250,6 +1324,44 @@ const docTemplate = `{
                     "description": "Destination site ID",
                     "type": "string",
                     "example": "Q3"
+                }
+            }
+        },
+        "models.UserInfo": {
+            "description": "Detailed user information including permissions",
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "id": {
+                    "description": "User ID",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "maCN": {
+                    "description": "Branch code (for THUTHU)",
+                    "type": "string",
+                    "example": "Q1"
+                },
+                "permissions": {
+                    "description": "User permissions",
+                    "type": "string",
+                    "example": "SELECT,INSERT,UPDATE,EXECUTE"
+                },
+                "role": {
+                    "description": "User role",
+                    "type": "string",
+                    "enum": [
+                        "THUTHU",
+                        "QUANLY"
+                    ],
+                    "example": "THUTHU"
+                },
+                "username": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "ThuThu_Q1"
                 }
             }
         }

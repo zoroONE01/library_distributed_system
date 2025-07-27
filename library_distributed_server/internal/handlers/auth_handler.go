@@ -25,7 +25,7 @@ func NewAuthHandler(authService *auth.AuthService, userRepo *repository.UserRepo
 
 // Login handles user authentication (FR1, FR5)
 // @Summary User login
-// @Description Authenticate user and return JWT token
+// @Description Authenticate user using stored procedure and return JWT token
 // @Tags Authentication
 // @Accept json
 // @Produce json
@@ -45,7 +45,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Validate credentials
+	// Validate credentials using sp_Login stored procedure
 	if !h.userRepo.ValidateCredentials(req.Username, req.Password) {
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 			Error: "Invalid username or password",
@@ -53,7 +53,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Get user info
+	// Get user info using sp_GetUserInfo stored procedure
 	user, err := h.userRepo.GetUserByUsername(req.Username)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
@@ -80,6 +80,57 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// Logout handles user logout
+// @Summary User logout
+// @Description Logout user (invalidate token on client side)
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]string "Logout successful"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Router /auth/logout [post]
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// In a stateless JWT system, logout is handled client-side
+	// by removing the token. We can add token blacklisting here if needed.
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Logout successful",
+	})
+}
+
+// GetCurrentUser handles getting current user profile
+// @Summary Get current user profile
+// @Description Get detailed information about the currently authenticated user
+// @Tags Authentication
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.UserInfo "User profile information"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /auth/profile [get]
+func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
+	// Get claims from middleware
+	claims, exists := GetClaims(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error: "Authentication required",
+		})
+		return
+	}
+
+	// Get detailed user information using sp_GetUserInfo
+	userInfo, err := h.userRepo.GetCurrentUserInfo(claims.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to get user information",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, userInfo)
 }
 
 // RequireAuth middleware for JWT authentication

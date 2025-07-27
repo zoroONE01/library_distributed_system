@@ -42,6 +42,7 @@ import (
 	"library_distributed_server/internal/models"
 	"library_distributed_server/internal/repository"
 	"library_distributed_server/pkg/database"
+	"library_distributed_server/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -60,7 +61,7 @@ func main() {
 	cfg.Server.Port = 8083
 
 	authService := auth.NewAuthService(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiry)
-	userRepo := repository.NewUserRepository(cfg)
+	userRepo := repository.NewUserRepository(cfg, SITE_ID)
 	bookRepo := repository.NewBookRepository(cfg)
 	borrowRepo := repository.NewBorrowRepository(cfg)
 
@@ -105,6 +106,9 @@ func setupRouter(authHandler *handlers.AuthHandler, bookHandler *handlers.BookHa
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
+	// Add CORS middleware
+	router.Use(utils.CORS())
+
 	// Swagger endpoint
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -123,7 +127,13 @@ func setupRouter(authHandler *handlers.AuthHandler, bookHandler *handlers.BookHa
 		})
 	})
 
-	router.POST("/auth/login", authHandler.Login)
+	// Auth routes (public)
+	authGroup := router.Group("/auth")
+	{
+		authGroup.POST("/login", authHandler.Login)
+		authGroup.POST("/logout", authHandler.RequireAuth(), authHandler.Logout)
+		authGroup.GET("/profile", authHandler.RequireAuth(), authHandler.GetCurrentUser)
+	}
 
 	api := router.Group("/api")
 	api.Use(authHandler.RequireAuth())

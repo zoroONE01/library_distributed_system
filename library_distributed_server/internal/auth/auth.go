@@ -16,17 +16,17 @@ type AuthService struct {
 // Claims - JWT token claims
 // @Description JWT token claims for authentication
 type Claims struct {
-	UserID   string `json:"userID" example:"user123"` // User identifier
-	Username string `json:"username" example:"thuthu01"` // Username
+	UserID   string `json:"userID" example:"user123"`                    // User identifier
+	Username string `json:"username" example:"thuthu01"`                 // Username
 	Role     string `json:"role" example:"THUTHU" enums:"THUTHU,QUANLY"` // User role
-	MaCN     string `json:"maCN" example:"Q1"` // Branch code for THUTHU users
+	MaCN     string `json:"maCN" example:"Q1"`                           // Branch code for THUTHU users
 	jwt.RegisteredClaims
 }
 
 // LoginRequest - Login request payload
 // @Description User login credentials
 type LoginRequest struct {
-	Username string `json:"username" binding:"required" example:"thuthu01" validate:"required"` // Username
+	Username string `json:"username" binding:"required" example:"thuthu01" validate:"required"`    // Username
 	Password string `json:"password" binding:"required" example:"password123" validate:"required"` // Password
 }
 
@@ -34,10 +34,10 @@ type LoginRequest struct {
 // @Description Successful login response with JWT token
 type LoginResponse struct {
 	Token    string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT access token
-	UserID   string `json:"userID" example:"user123"` // User identifier
-	Username string `json:"username" example:"thuthu01"` // Username
-	Role     string `json:"role" example:"THUTHU" enums:"THUTHU,QUANLY"` // User role
-	MaCN     string `json:"maCN,omitempty" example:"Q1"` // Branch code (only for THUTHU)
+	UserID   string `json:"userID" example:"user123"`                                // User identifier
+	Username string `json:"username" example:"thuthu01"`                             // Username
+	Role     string `json:"role" example:"THUTHU" enums:"THUTHU,QUANLY"`             // User role
+	MaCN     string `json:"maCN,omitempty" example:"Q1"`                             // Branch code (only for THUTHU)
 }
 
 func NewAuthService(secret string, expiry time.Duration) *AuthService {

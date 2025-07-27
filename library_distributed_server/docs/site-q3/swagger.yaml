@@ -349,6 +349,35 @@ definitions:
         example: Q3
         type: string
     type: object
+  models.UserInfo:
+    description: Detailed user information including permissions
+    properties:
+      id:
+        description: User ID
+        example: user123
+        type: string
+      maCN:
+        description: Branch code (for THUTHU)
+        example: Q1
+        type: string
+      permissions:
+        description: User permissions
+        example: SELECT,INSERT,UPDATE,EXECUTE
+        type: string
+      role:
+        description: User role
+        enum:
+        - THUTHU
+        - QUANLY
+        example: THUTHU
+        type: string
+      username:
+        description: Username
+        example: ThuThu_Q1
+        type: string
+    required:
+    - username
+    type: object
 host: localhost:8083
 info:
   contact:
@@ -788,7 +817,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user and return JWT token
+      description: Authenticate user using stored procedure and return JWT token
       parameters:
       - description: Login credentials
         in: body
@@ -816,6 +845,52 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: User login
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user (invalidate token on client side)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - Authentication
+  /auth/profile:
+    get:
+      description: Get detailed information about the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile information
+          schema:
+            $ref: '#/definitions/models.UserInfo'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
       tags:
       - Authentication
 securityDefinitions:
