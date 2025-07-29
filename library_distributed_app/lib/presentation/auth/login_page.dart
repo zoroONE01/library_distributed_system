@@ -67,13 +67,6 @@ class LoginForm extends HookConsumerWidget {
       );
     });
 
-    useEffect(() {
-      return () {
-        usernameController.dispose();
-        passwordController.dispose();
-      };
-    }, [usernameController, passwordController]);
-
     return Form(
       key: formKey,
       child: Column(

@@ -10,13 +10,13 @@ class UserInfoModel {
   final UserRole role;
 
   @JsonKey(name: 'maCN')
-  final String branchId;
+  final Site site;
 
   UserInfoModel({
     required this.id,
     required this.username,
     required this.role,
-    required this.branchId,
+    required this.site,
   });
 
   factory UserInfoModel.fromJson(Map<String, dynamic> json) =>
@@ -26,6 +26,6 @@ class UserInfoModel {
 
   @override
   String toString() {
-    return '$runtimeType: {id: $id, username: $username, role: $role, branchId: $branchId}';
+    return '$runtimeType: {id: $id, username: $username, role: $role, site: ${site.name}';
   }
 }

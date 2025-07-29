@@ -7,6 +7,7 @@ import 'package:library_distributed_app/core/extensions/text_style_extension.dar
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/core/theme/app_theme_mode.dart';
+import 'package:library_distributed_app/presentation/app/app_provider.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
 import 'package:library_distributed_app/presentation/readers/reader_list_create_dialog.dart';
 import 'package:library_distributed_app/presentation/search/search_page.dart';
@@ -29,24 +30,35 @@ class HomePage extends ConsumerWidget {
             DrawerHeader(
               decoration: BoxDecoration(color: context.primaryColor),
               margin: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Thư viện Quận 1',
-                    style: context.headlineMedium.copyWith(
-                      color: context.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Thủ thư: Nguyễn Văn A',
-                    style: context.bodyLarge.copyWith(color: context.onPrimary),
-                  ),
-                  Text(
-                    'Vai trò: THUTHU',
-                    style: context.bodyLarge.copyWith(color: context.onPrimary),
-                  ),
-                ],
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final userInfo = ref.watch(
+                    authProvider.notifier.select((value) => value.userInfo),
+                  );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Thư viện ${userInfo?.site.text}',
+                        style: context.headlineMedium.copyWith(
+                          color: context.onPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Thủ thư: ${userInfo?.username}',
+                        style: context.bodyLarge.copyWith(
+                          color: context.onPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Vai trò: ${userInfo?.role.text}',
+                        style: context.bodyLarge.copyWith(
+                          color: context.onPrimary,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             Consumer(
@@ -154,15 +166,19 @@ class HomePage extends ConsumerWidget {
               spacing: 10,
               children: [
                 Expanded(
-                  child:
-                      Text(
-                        'Thư viện chi nhánh Quận 1',
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final site = ref.watch(librarySiteProvider);
+                      return Text(
+                        'Thư viện chi nhánh ${site.text}',
                         style: context.headlineSmall.bold,
                         overflow: TextOverflow.ellipsis,
                       ).withIcon(
                         Icons.location_city_rounded,
                         iconColor: context.primaryColor,
-                      ),
+                      );
+                    },
+                  ),
                 ),
                 Builder(
                   builder: (context) {
@@ -193,19 +209,28 @@ class HomePage extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Thủ thư: Nguyễn Văn A',
-                                style: context.bodyMedium.bold,
-                              ),
-                              Text(
-                                'Vai trò: THUTHU',
-                                style: context.bodyMedium,
-                              ),
-                            ],
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final userInfo = ref.watch(
+                                authProvider.notifier.select(
+                                  (value) => value.userInfo,
+                                ),
+                              );
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Thủ thư: ${userInfo?.username}',
+                                    style: context.bodyMedium.bold,
+                                  ),
+                                  Text(
+                                    'Vai trò: ${userInfo?.role.text}',
+                                    style: context.bodyMedium,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),

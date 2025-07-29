@@ -1,14 +1,19 @@
 import 'package:json_annotation/json_annotation.dart';
 
 enum Site {
-  q1,
-  q3;
+  @JsonValue('Q1')
+  q1('Quận 1'),
+  @JsonValue('Q3')
+  q3('Quận 3');
+
+  final String text;
+  const Site(this.text);
 
   static Site fromString(String? value) {
     switch (value) {
-      case 'q1':
+      case 'Q1':
         return Site.q1;
-      case 'q3':
+      case 'Q3':
         return Site.q3;
       default:
         return Site.q1;
@@ -18,9 +23,12 @@ enum Site {
 
 enum UserRole {
   @JsonValue('THUTHU')
-  librarian,
+  librarian('Thủ Thư'),
   @JsonValue('QUANLY')
-  manager,
+  manager('Quản Lý');
+
+  final String text;
+  const UserRole(this.text);
 }
 
 enum UserRolePermission {
