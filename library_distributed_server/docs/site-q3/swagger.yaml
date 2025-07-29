@@ -794,6 +794,21 @@ paths:
       summary: Return borrowed book
       tags:
       - Borrowing
+  /auth/debug:
+    get:
+      description: Check JWT secret configuration for debugging token issues
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT configuration info
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Debug JWT configuration
+      tags:
+      - Authentication
   /auth/login:
     post:
       consumes:

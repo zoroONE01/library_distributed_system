@@ -67,7 +67,7 @@ func Load() (*Config, error) {
 			IdleTimeout:  getEnvAsDuration("SERVER_IDLE_TIMEOUT", 60*time.Second),
 		},
 		Auth: AuthConfig{
-			JWTSecret:   getEnv("JWT_SECRET", "your-secret-key"),
+			JWTSecret:   getEnv("JWT_SECRET", "distributed-library-system-secret-key-2024"),
 			TokenExpiry: getEnvAsDuration("JWT_TOKEN_EXPIRY", 24*time.Hour),
 		},
 		Sites: []SiteConfig{

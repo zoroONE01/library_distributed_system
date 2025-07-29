@@ -718,6 +718,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/debug": {
+            "get": {
+                "description": "Check JWT secret configuration for debugging token issues",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Debug JWT configuration",
+                "responses": {
+                    "200": {
+                        "description": "JWT configuration info",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate user using stored procedure and return JWT access token only",

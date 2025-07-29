@@ -42,12 +42,16 @@ class AuthInterceptor implements Interceptor {
     Chain<BodyType> chain,
   ) async {
     final token = await secureStorage.readAccessToken();
+    
     if (token != null && token.isNotEmpty) {
+      logger.d('🔐 Adding auth token to request: ${chain.request.url}');
       final headers = Map<String, String>.from(chain.request.headers);
       headers['Authorization'] = 'Bearer $token';
 
       final request = chain.request.copyWith(headers: headers);
       return chain.proceed(request);
+    } else {
+      logger.d('⚠️ No auth token found for request: ${chain.request.url}');
     }
 
     return chain.proceed(chain.request);

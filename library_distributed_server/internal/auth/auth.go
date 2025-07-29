@@ -69,14 +69,26 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		// Return more specific error messages for debugging
+		switch {
+		case errors.Is(err, jwt.ErrTokenMalformed):
+			return nil, errors.New("token is malformed")
+		case errors.Is(err, jwt.ErrTokenExpired):
+			return nil, errors.New("token has expired")
+		case errors.Is(err, jwt.ErrTokenNotValidYet):
+			return nil, errors.New("token is not valid yet")
+		case errors.Is(err, jwt.ErrTokenSignatureInvalid):
+			return nil, errors.New("token signature is invalid: signature is invalid")
+		default:
+			return nil, err
+		}
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, errors.New("invalid token")
+	return nil, errors.New("invalid token claims")
 }
 
 func (s *AuthService) HashPassword(password string) (string, error) {
@@ -110,4 +122,16 @@ func (s *AuthService) CanAccessSite(claims *Claims, siteID string) bool {
 	}
 
 	return false
+}
+
+// GetJWTSecretHash returns a hash of the JWT secret for debugging (development only)
+func (s *AuthService) GetJWTSecretHash() string {
+	if len(s.jwtSecret) == 0 {
+		return "empty"
+	}
+	// Return first 8 characters for debugging
+	if len(s.jwtSecret) >= 8 {
+		return string(s.jwtSecret[0:8]) + "..."
+	}
+	return string(s.jwtSecret) + "..."
 }

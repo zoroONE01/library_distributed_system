@@ -1,3 +1,5 @@
+import 'package:json_annotation/json_annotation.dart';
+
 enum Site {
   q1,
   q3;
@@ -14,7 +16,27 @@ enum Site {
   }
 }
 
-enum UserRole { librarian, manager }
+enum UserRole {
+  @JsonValue('THUTHU')
+  librarian,
+  @JsonValue('QUANLY')
+  manager,
+}
+
+enum UserRolePermission {
+  @JsonValue('BRANCH_ACCESS')
+  branchAccess,
+  @JsonValue('BOOK_BORROW')
+  bookBorrow,
+  @JsonValue('BOOK_RETURN')
+  bookReturn,
+  @JsonValue('BOOK_MANAGE')
+  bookManage,
+  @JsonValue('USER_MANAGE')
+  userManage,
+  @JsonValue('REPORT_VIEW')
+  reportView,
+}
 
 enum BookSortOption { name, author, category, quantity }
 

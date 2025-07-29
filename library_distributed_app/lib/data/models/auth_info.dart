@@ -15,6 +15,6 @@ class AuthInfoModel {
 
   @override
   String toString() {
-    return 'AuthInfoModel{accessToken: $accessToken}';
+    return '$runtimeType: {accessToken: $accessToken}';
   }
 }

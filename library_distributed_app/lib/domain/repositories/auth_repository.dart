@@ -19,6 +19,5 @@ abstract class AuthRepository {
 
   Future<void> logout();
 
-  /// Get current user profile information
-  Future<UserInfoModel> getCurrentUser();
+  Future<UserInfoModel> getProfile();
 }

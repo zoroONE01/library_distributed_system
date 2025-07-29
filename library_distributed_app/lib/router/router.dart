@@ -20,7 +20,7 @@ part 'route_observer.dart';
 final appRouterProvider = Provider(
   (ref) => GoRouter(
     routes: $appRoutes,
-    initialLocation: '/books',
+    initialLocation: '/',
     observers: [AppRouteObserver(ref)],
     redirect: (context, state) async {
       final loggedIn = await ref.read(authProvider.future);

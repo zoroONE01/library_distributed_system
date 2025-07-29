@@ -1,17 +1,22 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:library_distributed_app/core/constants/enums.dart';
 
 part 'user_info.g.dart';
 
 @JsonSerializable()
 class UserInfoModel {
+  final String id;
   final String username;
-  final String email;
-  final String fullName;
+  final UserRole role;
 
-  const UserInfoModel({
+  @JsonKey(name: 'maCN')
+  final String branchId;
+
+  UserInfoModel({
+    required this.id,
     required this.username,
-    required this.email,
-    required this.fullName,
+    required this.role,
+    required this.branchId,
   });
 
   factory UserInfoModel.fromJson(Map<String, dynamic> json) =>
@@ -19,16 +24,8 @@ class UserInfoModel {
 
   Map<String, dynamic> toJson() => _$UserInfoModelToJson(this);
 
-  UserInfoModel copyWith({String? username, String? email, String? fullName}) {
-    return UserInfoModel(
-      username: username ?? this.username,
-      email: email ?? this.email,
-      fullName: fullName ?? this.fullName,
-    );
-  }
-
   @override
   String toString() {
-    return 'UserInfoModel{username: $username, email: $email, fullName: $fullName}';
+    return '$runtimeType: {id: $id, username: $username, role: $role, branchId: $branchId}';
   }
 }

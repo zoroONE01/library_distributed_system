@@ -17,7 +17,7 @@ abstract class AuthService extends ChopperService {
   Future<Response<void>> logout();
 
   @GET(path: '/profile')
-  Future<Response<UserInfoModel>> getUserProfile();
+  Future<Response<UserInfoModel>> getProfile();
 
   static AuthService create([ChopperClient? client]) => _$AuthService(client);
 }

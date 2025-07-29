@@ -48,9 +48,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserInfoModel> getCurrentUser() async {
+  Future<UserInfoModel> getProfile() async {
     try {
-      final response = await _authService.getUserProfile();
+      final response = await _authService.getProfile();
 
       if (response.isSuccessful && response.body != null) {
         return response.body!;

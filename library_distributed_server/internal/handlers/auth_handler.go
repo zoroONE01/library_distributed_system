@@ -252,3 +252,17 @@ func GetClaims(c *gin.Context) (*auth.Claims, bool) {
 	userClaims, ok := claims.(*auth.Claims)
 	return userClaims, ok
 }
+
+// Debug endpoint to check JWT configuration (development only)
+// @Summary Debug JWT configuration
+// @Description Check JWT secret configuration for debugging token issues
+// @Tags Authentication
+// @Produce json
+// @Success 200 {object} map[string]string "JWT configuration info"
+// @Router /auth/debug [get]
+func (h *AuthHandler) DebugJWT(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"jwt_secret_hash": h.authService.GetJWTSecretHash(),
+		"message":         "This endpoint should only be used in development",
+	})
+}

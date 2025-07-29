@@ -26,8 +26,11 @@ run: ## Start all servers concurrently
 	@echo "- Site Q3: http://localhost:8083"
 	@echo "- Coordinator: http://localhost:8080"
 	@echo ""
-	@echo "Press Ctrl+C to stop all servers"
-	@echo ""
+	@echo "Setting up environment variables..."
+	@export JWT_SECRET="distributed-library-system-secret-key-2024" && \
+	export JWT_TOKEN_EXPIRY="24h" && \
+	echo "Press Ctrl+C to stop all servers" && \
+	echo "" && \
 	go run ./cmd/coordinator/main.go & \
 	go run ./cmd/site-q1/main.go & \
 	go run ./cmd/site-q3/main.go & \
