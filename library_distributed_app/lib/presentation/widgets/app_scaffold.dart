@@ -1,8 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 
-class AppScaffold extends StatelessWidget {
+class AppScaffold extends HookWidget {
   final PreferredSizeWidget? appBar;
   final Widget? body;
   final Widget? floatingActionButton;
@@ -73,6 +74,7 @@ class AppScaffold extends StatelessWidget {
       radius: 1.0,
     );
 
+    final scrollController = useScrollController();
     return Stack(
       children: [
         Positioned.fill(
@@ -95,8 +97,10 @@ class AppScaffold extends StatelessWidget {
           body: LayoutBuilder(
             builder: (context, constraints) {
               return Scrollbar(
+                controller: scrollController,
                 thumbVisibility: true,
                 child: SingleChildScrollView(
+                  controller: scrollController,
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: Container(
