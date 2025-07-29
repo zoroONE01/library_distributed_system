@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'auth_info.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class AuthInfoModel {
   final String? accessToken;
 
@@ -12,4 +12,9 @@ class AuthInfoModel {
       _$AuthInfoModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$AuthInfoModelToJson(this);
+
+  @override
+  String toString() {
+    return 'AuthInfoModel{accessToken: $accessToken}';
+  }
 }

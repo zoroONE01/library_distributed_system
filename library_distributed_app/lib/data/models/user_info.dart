@@ -26,4 +26,9 @@ class UserInfoModel {
       fullName: fullName ?? this.fullName,
     );
   }
+
+  @override
+  String toString() {
+    return 'UserInfoModel{username: $username, email: $email, fullName: $fullName}';
+  }
 }

@@ -20,6 +20,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final response = await _authService.login(entity);
 
+
+      logger.i('Login response: ${response.body}');
       if (response.isSuccessful && response.body != null) {
         final authInfo = response.body!;
 

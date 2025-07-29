@@ -16,30 +16,11 @@ definitions:
     - username
     type: object
   auth.LoginResponse:
-    description: Successful login response with JWT token
+    description: Successful login response with JWT access token only
     properties:
-      maCN:
-        description: Branch code (only for THUTHU)
-        example: Q1
-        type: string
-      role:
-        description: User role
-        enum:
-        - THUTHU
-        - QUANLY
-        example: THUTHU
-        type: string
-      token:
+      accessToken:
         description: JWT access token
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-      userID:
-        description: User identifier
-        example: user123
-        type: string
-      username:
-        description: Username
-        example: thuthu01
         type: string
     type: object
   main.TransferBookRequest:
@@ -817,7 +798,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user using stored procedure and return JWT token
+      description: Authenticate user using stored procedure and return JWT access
+        token only
       parameters:
       - description: Login credentials
         in: body
@@ -829,7 +811,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Login successful
+          description: Login successful with access token
           schema:
             $ref: '#/definitions/auth.LoginResponse'
         "400":
@@ -873,6 +855,7 @@ paths:
   /auth/profile:
     get:
       description: Get detailed information about the currently authenticated user
+        including role, branch, and permissions
       produces:
       - application/json
       responses:

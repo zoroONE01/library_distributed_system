@@ -25,12 +25,12 @@ func NewAuthHandler(authService *auth.AuthService, userRepo *repository.UserRepo
 
 // Login handles user authentication (FR1, FR5)
 // @Summary User login
-// @Description Authenticate user using stored procedure and return JWT token
+// @Description Authenticate user using stored procedure and return JWT access token only
 // @Tags Authentication
 // @Accept json
 // @Produce json
 // @Param credentials body auth.LoginRequest true "Login credentials"
-// @Success 200 {object} auth.LoginResponse "Login successful"
+// @Success 200 {object} auth.LoginResponse "Login successful with access token"
 // @Failure 400 {object} models.ErrorResponse "Invalid request format"
 // @Failure 401 {object} models.ErrorResponse "Invalid credentials"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
@@ -72,11 +72,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	response := auth.LoginResponse{
-		Token:    token,
-		UserID:   user.ID,
-		Username: user.Username,
-		Role:     user.Role,
-		MaCN:     user.MaCN,
+		AccessToken: token,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -102,7 +98,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 // GetCurrentUser handles getting current user profile
 // @Summary Get current user profile
-// @Description Get detailed information about the currently authenticated user
+// @Description Get detailed information about the currently authenticated user including role, branch, and permissions
 // @Tags Authentication
 // @Produce json
 // @Security BearerAuth

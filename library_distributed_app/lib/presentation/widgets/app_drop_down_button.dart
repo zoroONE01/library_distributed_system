@@ -23,6 +23,7 @@ class AppDropDownButton<T> extends StatelessWidget {
     return DropdownButton(
       value: value,
       isExpanded: true,
+      focusColor: Colors.transparent,
       items: items
           .map(
             (item) => DropdownMenuItem(

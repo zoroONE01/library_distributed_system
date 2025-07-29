@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:library_distributed_app/core/constants/enums.dart';
 import 'package:library_distributed_app/core/extensions/text_style_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
+import 'package:library_distributed_app/core/extensions/toast_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/core/utils/validator.dart';
 import 'package:library_distributed_app/domain/entities/login_form.dart';
@@ -55,8 +56,16 @@ class LoginForm extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(GlobalKey<FormState>.new, const []);
-    final usernameController = useTextEditingController();
-    final passwordController = useTextEditingController();
+    final usernameController = useTextEditingController(text: 'ThuThu_Q1');
+    final passwordController = useTextEditingController(text: 'ThuThu123@');
+
+    ref.listen(authProvider, (_, state) {
+      state.whenOrNull(
+        error: (error, stackTrace) {
+          context.showError(error.toString());
+        },
+      );
+    });
 
     useEffect(() {
       return () {
@@ -67,7 +76,6 @@ class LoginForm extends HookConsumerWidget {
 
     return Form(
       key: formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         spacing: 20,
         children: [

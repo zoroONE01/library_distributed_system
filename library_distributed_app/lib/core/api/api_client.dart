@@ -1,8 +1,11 @@
 import 'package:chopper/chopper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:library_distributed_app/core/api/interceptor.dart';
-import 'package:library_distributed_app/core/utils/local_storage_manager.dart';
+import 'package:library_distributed_app/data/models/auth_info.dart';
+import 'package:library_distributed_app/data/models/user_info.dart';
 import 'package:library_distributed_app/data/services/auth_service.dart';
+import 'package:library_distributed_app/core/utils/json_serializable_converter.dart';
+import 'package:library_distributed_app/presentation/app/app_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../constants/api_end_points.dart';
@@ -10,21 +13,31 @@ import '../constants/enums.dart';
 
 part 'api_client.g.dart';
 
+final _interceptors = [AuthInterceptor(), LoggingInterceptor()];
+
 final _services = [AuthService.create()];
 
-@riverpod
+final _converter = JsonSerializableConverter({
+  AuthInfoModel: AuthInfoModel.fromJson,
+  UserInfoModel: UserInfoModel.fromJson,
+});
+
+@Riverpod(keepAlive: true)
 ChopperClient apiClientProvider(Ref ref) {
-  final localSiteValue = localStorage.read(LocalStorageKeys.site);
-  final currentSite = Site.fromString(localSiteValue);
-  final baseUrl = switch (currentSite) {
+  final site = ref.watch(librarySiteProvider);
+  final baseUrl = switch (site) {
     Site.q1 => ApiEndPoints.siteQ1BaseUrl,
     Site.q3 => ApiEndPoints.siteQ3BaseUrl,
   };
 
-  return ChopperClient(
+  final client = ChopperClient(
     baseUrl: Uri.tryParse(baseUrl),
     services: _services,
-    converter: const JsonConverter(),
-    interceptors: [LoggingInterceptor(), AuthInterceptor()],
+    converter: _converter,
+    interceptors: _interceptors,
   );
+
+  ref.onDispose(client.dispose);
+
+  return client;
 }

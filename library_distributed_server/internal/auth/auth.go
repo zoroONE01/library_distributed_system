@@ -31,13 +31,9 @@ type LoginRequest struct {
 }
 
 // LoginResponse - Login response payload
-// @Description Successful login response with JWT token
+// @Description Successful login response with JWT access token only
 type LoginResponse struct {
-	Token    string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT access token
-	UserID   string `json:"userID" example:"user123"`                                // User identifier
-	Username string `json:"username" example:"thuthu01"`                             // Username
-	Role     string `json:"role" example:"THUTHU" enums:"THUTHU,QUANLY"`             // User role
-	MaCN     string `json:"maCN,omitempty" example:"Q1"`                             // Branch code (only for THUTHU)
+	AccessToken string `json:"accessToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT access token
 }
 
 func NewAuthService(secret string, expiry time.Duration) *AuthService {

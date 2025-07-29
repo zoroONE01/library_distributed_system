@@ -714,7 +714,7 @@
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user using stored procedure and return JWT token",
+                "description": "Authenticate user using stored procedure and return JWT access token only",
                 "consumes": [
                     "application/json"
                 ],
@@ -738,7 +738,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Login successful",
+                        "description": "Login successful with access token",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginResponse"
                         }
@@ -808,7 +808,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get detailed information about the currently authenticated user",
+                "description": "Get detailed information about the currently authenticated user including role, branch, and permissions",
                 "produces": [
                     "application/json"
                 ],
@@ -861,37 +861,13 @@
             }
         },
         "auth.LoginResponse": {
-            "description": "Successful login response with JWT token",
+            "description": "Successful login response with JWT access token only",
             "type": "object",
             "properties": {
-                "maCN": {
-                    "description": "Branch code (only for THUTHU)",
-                    "type": "string",
-                    "example": "Q1"
-                },
-                "role": {
-                    "description": "User role",
-                    "type": "string",
-                    "enum": [
-                        "THUTHU",
-                        "QUANLY"
-                    ],
-                    "example": "THUTHU"
-                },
-                "token": {
+                "accessToken": {
                     "description": "JWT access token",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "userID": {
-                    "description": "User identifier",
-                    "type": "string",
-                    "example": "user123"
-                },
-                "username": {
-                    "description": "Username",
-                    "type": "string",
-                    "example": "thuthu01"
                 }
             }
         },
