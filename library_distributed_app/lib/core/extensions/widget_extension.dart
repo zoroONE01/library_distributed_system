@@ -20,7 +20,7 @@ extension WidgetExtension on Widget {
         ),
       ),
       child: Container(
-        padding: padding ?? EdgeInsets.all(25),
+        padding: padding ?? const EdgeInsets.all(25),
         width: width,
         height: height,
         child: this,

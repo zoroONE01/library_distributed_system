@@ -77,7 +77,7 @@ class AppTheme {
         errorColor,
         surfaceColor,
       ),
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         color: dividerColor,
         thickness: 1,
         space: 16,
@@ -125,7 +125,7 @@ class AppTheme {
         darkErrorColor,
         darkSurfaceColor,
       ),
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         color: darkDividerColor,
         thickness: 1,
         space: 16,

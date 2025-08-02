@@ -1,1 +1,11 @@
 include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Add or remove rules as needed
+    prefer_single_quotes: true
+    avoid_print: true
+    unnecessary_string_interpolations: true
+    prefer_const_constructors: true
+    prefer_final_locals: true
+    avoid_unnecessary_containers: true

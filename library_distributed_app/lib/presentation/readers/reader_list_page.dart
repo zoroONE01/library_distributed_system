@@ -31,7 +31,7 @@ class ReaderListPage extends StatelessWidget {
               ),
               AppButton(
                 label: 'Thêm sách mới',
-                icon: Icon(Icons.add_rounded, size: 20),
+                icon: const Icon(Icons.add_rounded, size: 20),
                 onPressed: () {},
                 backgroundColor: context.primaryColor,
               ),
@@ -48,19 +48,19 @@ class ReaderListPage extends StatelessWidget {
                     child: AppTextField(
                       context,
                       labelText: 'Tìm kiếm sách',
-                      prefixIcon: Icon(Icons.search_rounded, size: 20),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
                     ),
                   ),
                   AppButton(
                     label: 'Sắp xếp',
-                    icon: Icon(Icons.sort_rounded, size: 20),
+                    icon: const Icon(Icons.sort_rounded, size: 20),
                     onPressed: () {},
                     shadowColor: Colors.transparent,
                     backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   ),
                   AppButton(
                     label: 'Làm mới',
-                    icon: Icon(Icons.refresh_rounded, size: 20),
+                    icon: const Icon(Icons.refresh_rounded, size: 20),
                     onPressed: () {},
                     shadowColor: Colors.transparent,
                     backgroundColor: context.onSurface.withValues(alpha: 0.2),
@@ -118,11 +118,11 @@ class ReaderListPage extends StatelessWidget {
             runSpacing: 10,
             children: [
               IconButton(
-                icon: Icon(Icons.edit_rounded, size: 20),
+                icon: const Icon(Icons.edit_rounded, size: 20),
                 onPressed: onEdit,
               ),
               IconButton(
-                icon: Icon(Icons.delete_rounded, size: 20),
+                icon: const Icon(Icons.delete_rounded, size: 20),
                 color: context.errorColor,
                 onPressed: onDelete,
               ),

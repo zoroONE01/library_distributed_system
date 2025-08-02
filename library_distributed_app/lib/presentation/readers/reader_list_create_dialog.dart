@@ -11,11 +11,11 @@ class ReaderListCreateDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Thêm Độc giả mới'),
+      title: const Text('Thêm Độc giả mới'),
       content: AppTextField(
         context,
         labelText: 'Nhập tên độc giả',
-        prefixIcon: Icon(Icons.person_add_alt_1_rounded),
+        prefixIcon: const Icon(Icons.person_add_alt_1_rounded),
       ),
       actions: [
         TextButton(

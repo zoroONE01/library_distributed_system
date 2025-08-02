@@ -27,7 +27,7 @@ class App extends HookConsumerWidget {
   }
 
   Widget _buildApp(Widget? child) =>
-      Stack(children: [if (child != null) child, _AppLoading()]);
+      Stack(children: [if (child != null) child, const _AppLoading()]);
 }
 
 class _AppLoading extends HookConsumerWidget {
@@ -39,7 +39,7 @@ class _AppLoading extends HookConsumerWidget {
       () => Positioned.fill(
         child: ColoredBox(
           color: context.surfaceColor.withValues(alpha: .5),
-          child: Center(child: CircularProgressIndicator.adaptive()),
+          child: const Center(child: CircularProgressIndicator.adaptive()),
         ),
       ),
     );

@@ -12,7 +12,7 @@ class SearchPage extends StatelessWidget {
       content: AppTextField(
         context,
         labelText: 'Nhập từ khóa tìm kiếm',
-        prefixIcon: Icon(Icons.search),
+        prefixIcon: const Icon(Icons.search),
       ),
       actions: [
         TextButton(

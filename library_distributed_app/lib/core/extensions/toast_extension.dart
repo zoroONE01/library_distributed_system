@@ -8,7 +8,7 @@ extension ToastExtension on BuildContext {
     toastification.show(
       context: this,
       type: ToastificationType.error,
-      icon: Icon(Icons.error_outline_rounded),
+      icon: const Icon(Icons.error_outline_rounded),
       title: Text(message),
       autoCloseDuration: _autoCloseDuration,
     );
@@ -18,7 +18,7 @@ extension ToastExtension on BuildContext {
     toastification.show(
       context: this,
       type: ToastificationType.success,
-      icon: Icon(Icons.check_circle_outline_rounded),
+      icon: const Icon(Icons.check_circle_outline_rounded),
       title: Text(message),
       autoCloseDuration: _autoCloseDuration,
     );
@@ -28,7 +28,7 @@ extension ToastExtension on BuildContext {
     toastification.show(
       context: this,
       type: ToastificationType.info,
-      icon: Icon(Icons.info_outline_rounded),
+      icon: const Icon(Icons.info_outline_rounded),
       title: Text(message),
       autoCloseDuration: _autoCloseDuration,
     );
@@ -38,7 +38,7 @@ extension ToastExtension on BuildContext {
     toastification.show(
       context: this,
       type: ToastificationType.warning,
-      icon: Icon(Icons.warning_amber_rounded),
+      icon: const Icon(Icons.warning_amber_rounded),
       title: Text(message),
       autoCloseDuration: _autoCloseDuration,
     );

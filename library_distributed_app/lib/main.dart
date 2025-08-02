@@ -16,7 +16,7 @@ void main() {
       runApp(const ProviderScope(child: App()));
     },
     (error, stack) {
-      logger.e("___App error!!", error: error, stackTrace: stack);
+      logger.e('___App error!!', error: error, stackTrace: stack);
     },
   );
 }

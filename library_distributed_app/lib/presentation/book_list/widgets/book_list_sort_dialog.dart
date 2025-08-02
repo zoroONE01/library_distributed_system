@@ -1,4 +1,5 @@
 // ignore: implementation_imports
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:library_distributed_app/core/constants/enums.dart';
@@ -59,7 +60,7 @@ class BookListSortDialog extends HookWidget {
                 },
               ),
             ),
-            Divider(),
+            const Divider(),
             ListTile(
               title: Text('Tăng dần', style: context.bodyLarge),
               leading: Radio<SortOrder>(

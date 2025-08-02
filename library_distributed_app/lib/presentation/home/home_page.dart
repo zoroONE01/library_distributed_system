@@ -88,8 +88,8 @@ class HomePage extends ConsumerWidget {
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: Text('Xác nhận đăng xuất'),
-                      content: Text('Bạn có chắc chắn muốn đăng xuất?'),
+                      title: const Text('Xác nhận đăng xuất'),
+                      content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
                       actions: [
                         TextButton(
                           onPressed: context.maybePop,
@@ -124,7 +124,7 @@ class HomePage extends ConsumerWidget {
                 AppButton(
                   label: 'Thêm Độc giả mới',
                   onPressed: () {
-                    ReaderListCreateDialog().showAsDialog(context);
+                    const ReaderListCreateDialog().showAsDialog(context);
                   },
                   backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   shadowColor: Colors.transparent,
@@ -142,14 +142,14 @@ class HomePage extends ConsumerWidget {
             AppTextField(
               context,
               onTap: () {
-                SearchPage().showAsDialog(context);
+                const SearchPage().showAsDialog(context);
               },
               labelText: 'Tìm sách, độc giả tại chi nhánh...',
             ),
             AppButton(
               label: 'Tìm kiếm',
               onPressed: () {
-                SearchPage().showAsDialog(context);
+                const SearchPage().showAsDialog(context);
               },
               width: double.infinity,
               backgroundColor: context.onSurface.withValues(alpha: 0.2),
@@ -263,7 +263,7 @@ class HomePage extends ConsumerWidget {
                           AppTextField(
                             context,
                             labelText: 'Nhập mã độc giả (Ví dụ: 12345)',
-                            prefixIcon: Icon(
+                            prefixIcon: const Icon(
                               Icons.person_outline_rounded,
                               size: 20,
                             ),
@@ -271,7 +271,7 @@ class HomePage extends ConsumerWidget {
                           AppTextField(
                             context,
                             labelText: 'Nhập mã sách (Ví dụ: 67890)',
-                            prefixIcon: Icon(Icons.book_sharp, size: 20),
+                            prefixIcon: const Icon(Icons.book_sharp, size: 20),
                           ),
                           AppButton(
                             label: 'Tạo phiếu mượn',
@@ -293,7 +293,7 @@ class HomePage extends ConsumerWidget {
                           AppTextField(
                             context,
                             labelText: 'Nhập mã phiếu mượn (Ví dụ: 67890)',
-                            prefixIcon: Icon(Icons.book_sharp, size: 20),
+                            prefixIcon: const Icon(Icons.book_sharp, size: 20),
                           ),
                           AppButton(
                             label: 'Xác nhận trả',

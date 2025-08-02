@@ -22,13 +22,13 @@ class AppPaginationControls extends StatelessWidget {
       children: [
         Text('Trang $currentPage trong $totalPages'),
         IconButton(
-          icon: Icon(Icons.chevron_left_rounded),
+          icon: const Icon(Icons.chevron_left_rounded),
           onPressed: currentPage > 1
               ? () => onPageChanged(currentPage - 1)
               : null,
         ),
         IconButton(
-          icon: Icon(Icons.chevron_right_rounded),
+          icon: const Icon(Icons.chevron_right_rounded),
           onPressed: currentPage < totalPages
               ? () => onPageChanged(currentPage + 1)
               : null,

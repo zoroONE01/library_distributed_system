@@ -1,7 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:library_distributed_app/core/utils/logger.dart';
 
-import '../../core/api/api_client.dart';
 import '../../domain/entities/login_form.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/auth_info.dart';
@@ -9,17 +7,13 @@ import '../models/user_info.dart';
 import '../services/auth_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  const AuthRepositoryImpl(this.ref);
-  final Ref ref;
-
-  AuthService get _authService =>
-      ref.read(apiClientProviderProvider).getService<AuthService>();
+  const AuthRepositoryImpl(this._service);
+  final AuthService _service;
 
   @override
   Future<AuthInfoModel> login(LoginFormEntity entity) async {
     try {
-      final response = await _authService.login(entity);
-
+      final response = await _service.login(entity);
 
       logger.i('Login response: ${response.body}');
       if (response.isSuccessful && response.body != null) {
@@ -40,7 +34,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
-      await _authService.logout();
+      await _service.logout();
     } catch (e) {
       logger.e('Logout error: $e');
       // Don't rethrow logout errors, just log them
@@ -50,7 +44,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserInfoModel> getProfile() async {
     try {
-      final response = await _authService.getProfile();
+      final response = await _service.getProfile();
 
       if (response.isSuccessful && response.body != null) {
         return response.body!;

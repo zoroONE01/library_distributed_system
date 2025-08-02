@@ -42,9 +42,9 @@ class LoginPage extends StatelessWidget {
               'Đăng nhập để truy cập hệ thống',
               style: context.headlineSmall,
             ),
-            LoginForm(),
+            const LoginForm(),
           ],
-        ).wrapByCard(context, width: 420, padding: EdgeInsets.all(40)),
+        ).wrapByCard(context, width: 420, padding: const EdgeInsets.all(40)),
       ),
     );
   }
@@ -75,7 +75,7 @@ class LoginForm extends HookConsumerWidget {
           AppTextField(
             context,
             labelText: 'Tên đăng nhập',
-            prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+            prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
             validator: AppValidator.validateUsername,
             controller: usernameController,
           ),
@@ -84,7 +84,7 @@ class LoginForm extends HookConsumerWidget {
             labelText: 'Mật khẩu',
             obscureText: true,
             controller: passwordController,
-            prefixIcon: Icon(Icons.lock_outline_rounded, size: 20),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
             validator: AppValidator.validatePassword,
           ),
           Consumer(
@@ -119,7 +119,7 @@ class LoginForm extends HookConsumerWidget {
           AppButton(
             label: 'Đăng nhập',
             width: double.infinity,
-            icon: Icon(Icons.login_rounded),
+            icon: const Icon(Icons.login_rounded),
             onPressed: () {
               if (!formKey.currentState!.validate()) {
                 return;

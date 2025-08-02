@@ -37,7 +37,7 @@ class Auth extends _$Auth {
 
       await _getProfile();
 
-      state = AsyncValue.data(true);
+      state = const AsyncValue.data(true);
 
       ref.router.replaceAll('/');
     } catch (e, stackTrace) {
@@ -70,7 +70,7 @@ class Auth extends _$Auth {
       await ref.read(authRepositoryProvider).logout();
       userInfo = null;
       secureStorage.deleteAll();
-      state = AsyncValue.data(false);
+      state = const AsyncValue.data(false);
       ref.router.replaceAll('/login');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
