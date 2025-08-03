@@ -3,9 +3,9 @@ package distributed
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"library_distributed_server/internal/config"
 	"library_distributed_server/pkg/database"
+	"log"
 )
 
 // TwoPhaseCommitCoordinator handles distributed transactions using 2PC protocol
@@ -98,22 +98,125 @@ func (c *TwoPhaseCommitCoordinator) preparePhase(txn *DistributedTransaction, ma
 		return fmt.Errorf("failed to prepare delete at source site %s: %w", fromSite, err)
 	}
 	fromParticipant.Prepared = true
-	log.Printf("Source site %s prepared successfully", fromSite)
 
-	// Prepare destination site (insert operation)  
+	// Prepare destination site (insert operation)
 	toParticipant := txn.Participants[toSite]
 	if err := c.prepareInsert(toParticipant, maQuyenSach, toSite); err != nil {
 		return fmt.Errorf("failed to prepare insert at destination site %s: %w", toSite, err)
 	}
 	toParticipant.Prepared = true
-	log.Printf("Destination site %s prepared successfully", toSite)
 
 	txn.Status = "PREPARED"
-	log.Printf("Phase 1 completed: All participants prepared")
+	log.Printf("Phase 1 completed: All participants prepared for transaction %s", txn.ID)
 	return nil
 }
 
-// commitPhase implements Phase 2 of 2PC protocol
+// CreateSachDistributed creates a book using 2PC across all sites (for replicated table)
+func (c *TwoPhaseCommitCoordinator) CreateSachDistributed(isbn, tenSach, tacGia, transactionID string) error {
+	log.Printf("Starting 2PC transaction for book creation: %s", isbn)
+
+	// Create distributed transaction
+	txn := &DistributedTransaction{
+		ID:           transactionID,
+		Participants: make(map[string]*TransactionParticipant),
+		Status:       "PREPARING",
+	}
+
+	// Get connections to all sites
+	for _, site := range c.config.Sites {
+		conn, err := c.pool.GetConnection(site.SiteID, c.config.GetConnectionString(site.SiteID))
+		if err != nil {
+			return fmt.Errorf("failed to connect to site %s: %w", site.SiteID, err)
+		}
+
+		txn.Participants[site.SiteID] = &TransactionParticipant{
+			SiteID:     site.SiteID,
+			Connection: conn,
+		}
+	}
+
+	// Phase 1: PREPARE - Call sp_QuanLy_PrepareCreateSach on all sites
+	if err := c.prepareSachCreation(txn, isbn, tenSach, tacGia, transactionID); err != nil {
+		log.Printf("Prepare phase failed for book creation: %v", err)
+		c.abortSachCreation(txn, transactionID)
+		return err
+	}
+
+	// Phase 2: COMMIT - Call sp_QuanLy_CommitCreateSach on all sites
+	if err := c.commitSachCreation(txn, isbn, tenSach, tacGia, transactionID); err != nil {
+		log.Printf("Commit phase failed for book creation: %v", err)
+		c.abortSachCreation(txn, transactionID)
+		return err
+	}
+
+	log.Printf("2PC transaction completed successfully for book creation: %s", isbn)
+	return nil
+}
+
+// prepareSachCreation implements Phase 1 for book creation
+func (c *TwoPhaseCommitCoordinator) prepareSachCreation(txn *DistributedTransaction, isbn, tenSach, tacGia, transactionID string) error {
+	log.Printf("Phase 1: PREPARE - Book Creation Transaction ID: %s", transactionID)
+
+	for siteID, participant := range txn.Participants {
+		// Call sp_QuanLy_PrepareCreateSach
+		query := "EXEC sp_QuanLy_PrepareCreateSach @ISBN = ?, @TenSach = ?, @TacGia = ?, @TransactionId = ?"
+		_, err := participant.Connection.Exec(query, isbn, tenSach, tacGia, transactionID)
+		if err != nil {
+			return fmt.Errorf("failed to prepare book creation at site %s: %w", siteID, err)
+		}
+		participant.Prepared = true
+		log.Printf("Site %s prepared for book creation", siteID)
+	}
+
+	txn.Status = "PREPARED"
+	log.Printf("Phase 1 completed: All sites prepared for book creation %s", isbn)
+	return nil
+}
+
+// commitSachCreation implements Phase 2 for book creation
+func (c *TwoPhaseCommitCoordinator) commitSachCreation(txn *DistributedTransaction, isbn, tenSach, tacGia, transactionID string) error {
+	log.Printf("Phase 2: COMMIT - Book Creation Transaction ID: %s", transactionID)
+
+	for siteID, participant := range txn.Participants {
+		if !participant.Prepared {
+			return fmt.Errorf("site %s was not prepared, cannot commit", siteID)
+		}
+
+		// Call sp_QuanLy_CommitCreateSach
+		query := "EXEC sp_QuanLy_CommitCreateSach @ISBN = ?, @TenSach = ?, @TacGia = ?, @TransactionId = ?"
+		_, err := participant.Connection.Exec(query, isbn, tenSach, tacGia, transactionID)
+		if err != nil {
+			return fmt.Errorf("failed to commit book creation at site %s: %w", siteID, err)
+		}
+		participant.Committed = true
+		log.Printf("Site %s committed book creation", siteID)
+	}
+
+	txn.Status = "COMMITTED"
+	log.Printf("Phase 2 completed: Book creation committed on all sites for %s", isbn)
+	return nil
+}
+
+// abortSachCreation rolls back book creation on all sites
+func (c *TwoPhaseCommitCoordinator) abortSachCreation(txn *DistributedTransaction, transactionID string) {
+	log.Printf("Aborting book creation transaction: %s", transactionID)
+
+	for siteID, participant := range txn.Participants {
+		// Call rollback stored procedure if exists
+		query := "EXEC sp_QuanLy_RollbackCreateSach @TransactionId = ?"
+		_, err := participant.Connection.Exec(query, transactionID)
+		if err != nil {
+			log.Printf("Warning: Failed to rollback book creation at site %s: %v", siteID, err)
+		} else {
+			log.Printf("Site %s rolled back book creation", siteID)
+		}
+		participant.Aborted = true
+	}
+
+	txn.Status = "ABORTED"
+}
+
+// commitPhase implements Phase 2 of 2PC protocol for book transfer
 func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction) error {
 	log.Printf("Phase 2: COMMIT - Transaction ID: %s", txn.ID)
 	txn.Status = "COMMITTING"
@@ -132,50 +235,6 @@ func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction) err
 	txn.Status = "COMMITTED"
 	log.Printf("Phase 2 completed: All participants committed")
 	return nil
-}
-
-// prepareDelete prepares deletion of book from source site
-func (c *TwoPhaseCommitCoordinator) prepareDelete(participant *TransactionParticipant, maQuyenSach string) error {
-	// Begin distributed transaction
-	_, err := participant.Connection.Exec("BEGIN DISTRIBUTED TRANSACTION")
-	if err != nil {
-		return err
-	}
-
-	// Verify book exists and can be deleted
-	var count int
-	err = participant.Connection.QueryRow(
-		"SELECT COUNT(*) FROM QUYENSACH WHERE MaQuyenSach = ? AND TinhTrang = N'Có sẵn'",
-		maQuyenSach).Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return fmt.Errorf("book %s not available for transfer", maQuyenSach)
-	}
-
-	// Prepare to delete (lock the record)
-	_, err = participant.Connection.Exec(
-		"UPDATE QUYENSACH SET TinhTrang = N'Đang chuyển' WHERE MaQuyenSach = ?",
-		maQuyenSach)
-	
-	return err
-}
-
-// prepareInsert prepares insertion of book at destination site
-func (c *TwoPhaseCommitCoordinator) prepareInsert(participant *TransactionParticipant, maQuyenSach, toSite string) error {
-	// Begin distributed transaction
-	_, err := participant.Connection.Exec("BEGIN DISTRIBUTED TRANSACTION")
-	if err != nil {
-		return err
-	}
-
-	// Get book details from source to prepare insert
-	// For now, we assume the book details are available
-	// In a real implementation, we would retrieve these from the source
-	
-	return nil // Preparation successful
 }
 
 // commitParticipant commits changes at a participant site
@@ -205,6 +264,38 @@ func (c *TwoPhaseCommitCoordinator) abortTransaction(txn *DistributedTransaction
 func (c *TwoPhaseCommitCoordinator) abortParticipant(participant *TransactionParticipant) error {
 	_, err := participant.Connection.Exec("ROLLBACK TRANSACTION")
 	return err
+}
+
+// prepareDelete prepares deletion of book from source site
+func (c *TwoPhaseCommitCoordinator) prepareDelete(participant *TransactionParticipant, maQuyenSach string) error {
+	// Verify book exists and can be deleted
+	var count int
+	err := participant.Connection.QueryRow(
+		"SELECT COUNT(*) FROM QUYENSACH WHERE MaQuyenSach = ? AND TinhTrang = N'Có sẵn'",
+		maQuyenSach).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return fmt.Errorf("book %s not available for transfer", maQuyenSach)
+	}
+
+	// Prepare to delete (lock the record)
+	_, err = participant.Connection.Exec(
+		"UPDATE QUYENSACH SET TinhTrang = N'Đang chuyển' WHERE MaQuyenSach = ?",
+		maQuyenSach)
+
+	return err
+}
+
+// prepareInsert prepares insertion of book at destination site
+func (c *TwoPhaseCommitCoordinator) prepareInsert(participant *TransactionParticipant, maQuyenSach, toSite string) error {
+	// Get book details from source to prepare insert
+	// For now, we assume the book details are available
+	// In a real implementation, we would retrieve these from the source
+	log.Printf("Destination site %s prepared for book copy insertion", toSite)
+	return nil
 }
 
 // TransferBookUsingStoredProcedure uses the existing stored procedure approach

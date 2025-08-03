@@ -223,3 +223,180 @@ func (h *BookHandler) GetAvailableBookCopy(c *gin.Context) {
 		},
 	})
 }
+
+// CreateQuyenSach handles POST /api/site/{siteID}/book-copies
+// Implements FR9 - CRUD quyển sách (ThuThu only)
+// @Summary Create new book copy
+// @Description Create a new book copy at the current site (ThuThu only)
+// @Tags Book Copies
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param bookCopy body models.QuyenSach true "Book copy information"
+// @Success 201 {object} models.SuccessResponse "Book copy created successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request body"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
+// @Failure 409 {object} models.ErrorResponse "Book copy already exists"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /api/site/{siteID}/book-copies [post]
+func (h *BookHandler) CreateQuyenSach(c *gin.Context) {
+	var quyenSach models.QuyenSach
+	if err := c.ShouldBindJSON(&quyenSach); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "Invalid request body",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Ensure the book copy belongs to the current site
+	quyenSach.MaCN = h.siteID
+
+	err := h.bookRepo.CreateQuyenSach(quyenSach)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to create book copy",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy created successfully",
+		Data:    quyenSach,
+	})
+}
+
+// GetQuyenSach handles GET /api/site/{siteID}/book-copies/{maQuyenSach}
+// Implements FR9 - CRUD quyển sách
+// @Summary Get book copy by ID
+// @Description Get book copy information by ID
+// @Tags Book Copies
+// @Produce json
+// @Security BearerAuth
+// @Param maQuyenSach path string true "Book copy ID"
+// @Success 200 {object} models.SuccessResponse{data=models.QuyenSach} "Book copy found"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 404 {object} models.ErrorResponse "Book copy not found"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /api/site/{siteID}/book-copies/{maQuyenSach} [get]
+func (h *BookHandler) GetQuyenSach(c *gin.Context) {
+	maQuyenSach := c.Param("maQuyenSach")
+	if maQuyenSach == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: "Book copy ID is required",
+		})
+		return
+	}
+
+	quyenSach, err := h.bookRepo.ReadQuyenSach(maQuyenSach, h.siteID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Error:   "Book copy not found",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy found",
+		Data:    quyenSach,
+	})
+}
+
+// UpdateQuyenSach handles PUT /api/site/{siteID}/book-copies/{maQuyenSach}
+// Implements FR9 - CRUD quyển sách (ThuThu only)
+// @Summary Update book copy
+// @Description Update book copy information (ThuThu only)
+// @Tags Book Copies
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param maQuyenSach path string true "Book copy ID"
+// @Param bookCopy body models.QuyenSach true "Updated book copy information"
+// @Success 200 {object} models.SuccessResponse "Book copy updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request body"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
+// @Failure 404 {object} models.ErrorResponse "Book copy not found"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /api/site/{siteID}/book-copies/{maQuyenSach} [put]
+func (h *BookHandler) UpdateQuyenSach(c *gin.Context) {
+	maQuyenSach := c.Param("maQuyenSach")
+	if maQuyenSach == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: "Book copy ID is required",
+		})
+		return
+	}
+
+	var quyenSach models.QuyenSach
+	if err := c.ShouldBindJSON(&quyenSach); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "Invalid request body",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Ensure the book copy ID matches the URL parameter
+	quyenSach.MaQuyenSach = maQuyenSach
+	quyenSach.MaCN = h.siteID
+
+	err := h.bookRepo.UpdateQuyenSach(quyenSach)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to update book copy",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy updated successfully",
+		Data:    quyenSach,
+	})
+}
+
+// DeleteQuyenSach handles DELETE /api/site/{siteID}/book-copies/{maQuyenSach}
+// Implements FR9 - CRUD quyển sách (ThuThu only)
+// @Summary Delete book copy
+// @Description Delete a book copy (ThuThu only)
+// @Tags Book Copies
+// @Produce json
+// @Security BearerAuth
+// @Param maQuyenSach path string true "Book copy ID"
+// @Success 200 {object} models.SuccessResponse "Book copy deleted successfully"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
+// @Failure 404 {object} models.ErrorResponse "Book copy not found"
+// @Failure 409 {object} models.ErrorResponse "Cannot delete book copy currently on loan"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /api/site/{siteID}/book-copies/{maQuyenSach} [delete]
+func (h *BookHandler) DeleteQuyenSach(c *gin.Context) {
+	maQuyenSach := c.Param("maQuyenSach")
+	if maQuyenSach == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: "Book copy ID is required",
+		})
+		return
+	}
+
+	err := h.bookRepo.DeleteQuyenSach(maQuyenSach, h.siteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to delete book copy",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy deleted successfully",
+	})
+}

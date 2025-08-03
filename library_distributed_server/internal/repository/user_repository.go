@@ -88,6 +88,90 @@ func (r *UserRepository) tryStoredProcedureGetUser(conn *sql.DB, username string
 	return nil, fmt.Errorf("user not found or invalid: %s", username)
 }
 
+// DocGia Management Methods (FR8) - ThuThu Operations
+
+// CreateDocGia creates a new reader using sp_ThuThu_CreateDocGia
+func (r *UserRepository) CreateDocGia(docGia models.DocGia) error {
+	conn, err := r.GetConnection(r.siteID)
+	if err != nil {
+		return err
+	}
+
+	query := "EXEC sp_ThuThu_CreateDocGia @MaDG = ?, @HoTen = ?"
+	_, err = conn.Exec(query, docGia.MaDG, docGia.HoTen)
+	return err
+}
+
+// ReadDocGia retrieves reader information using sp_ThuThu_ReadDocGia
+func (r *UserRepository) ReadDocGia(maDG string) (*models.DocGia, error) {
+	conn, err := r.GetConnection(r.siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := "EXEC sp_ThuThu_ReadDocGia @MaDG = ?"
+	row := conn.QueryRow(query, maDG)
+
+	var docGia models.DocGia
+	err = row.Scan(&docGia.MaDG, &docGia.HoTen, &docGia.MaCNDangKy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &docGia, nil
+}
+
+// UpdateDocGia updates reader information using sp_ThuThu_UpdateDocGia
+func (r *UserRepository) UpdateDocGia(docGia models.DocGia) error {
+	conn, err := r.GetConnection(r.siteID)
+	if err != nil {
+		return err
+	}
+
+	query := "EXEC sp_ThuThu_UpdateDocGia @MaDG = ?, @HoTen = ?"
+	_, err = conn.Exec(query, docGia.MaDG, docGia.HoTen)
+	return err
+}
+
+// DeleteDocGia deletes a reader using sp_ThuThu_DeleteDocGia
+func (r *UserRepository) DeleteDocGia(maDG string) error {
+	conn, err := r.GetConnection(r.siteID)
+	if err != nil {
+		return err
+	}
+
+	query := "EXEC sp_ThuThu_DeleteDocGia @MaDG = ?"
+	_, err = conn.Exec(query, maDG)
+	return err
+}
+
+// GetAllDocGia retrieves all readers for the current site
+func (r *UserRepository) GetAllDocGia() ([]models.DocGia, error) {
+	conn, err := r.GetConnection(r.siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := "SELECT MaDG, HoTen, MaCN_DangKy FROM DOCGIA WHERE MaCN_DangKy = ?"
+	rows, err := conn.Query(query, r.siteID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var readers []models.DocGia
+	for rows.Next() {
+		var reader models.DocGia
+		err := rows.Scan(&reader.MaDG, &reader.HoTen, &reader.MaCNDangKy)
+		if err != nil {
+			return nil, err
+		}
+		readers = append(readers, reader)
+	}
+
+	return readers, nil
+}
+
 // tryDirectGetUser tries getting user info using direct query as fallback
 func (r *UserRepository) tryDirectGetUser(conn *sql.DB, username string) (*models.User, error) {
 	query := `

@@ -63,6 +63,75 @@
                 }
             }
         },
+        "/api/manager/books": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new book in the catalog using 2-Phase Commit (Manager only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manager"
+                ],
+                "summary": "Create new book (2PC)",
+                "parameters": [
+                    {
+                        "description": "Book information",
+                        "name": "book",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Sach"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Book created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - Manager only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Book already exists",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/manager/books/search": {
             "get": {
                 "security": [
@@ -70,31 +139,19 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Search for books across all sites in the distributed system (Manager only)",
+                "description": "Search for available books across all sites (Manager only)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Books"
+                    "Manager"
                 ],
-                "summary": "Search books system-wide",
+                "summary": "Search available books system-wide",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Book title search term",
                         "name": "tenSach",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Author search term",
-                        "name": "tacGia",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "ISBN search term",
-                        "name": "isbn",
                         "in": "query"
                     }
                 ],
@@ -133,7 +190,198 @@
                         }
                     },
                     "403": {
-                        "description": "Manager role required",
+                        "description": "Access denied - Manager only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/manager/books/{isbn}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get book information by ISBN (Manager only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manager"
+                ],
+                "summary": "Get book by ISBN",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book ISBN",
+                        "name": "isbn",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Sach"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - Manager only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/manager/readers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all readers from all sites in the distributed system (Manager only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Get all readers system-wide",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search term for reader name",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Readers retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DocGia"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - Manager only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/manager/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get comprehensive statistics from all sites in the distributed system (Manager only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manager"
+                ],
+                "summary": "Get system-wide statistics",
+                "responses": {
+                    "200": {
+                        "description": "Statistics retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.SystemStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - Manager only",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -247,6 +495,273 @@
                     },
                     "403": {
                         "description": "Access denied to this site",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new book copy at the current site (ThuThu only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Create new book copy",
+                "parameters": [
+                    {
+                        "description": "Book copy information",
+                        "name": "bookCopy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.QuyenSach"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Book copy created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Book copy already exists",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/book-copies/{maQuyenSach}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get book copy information by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Get book copy by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book copy found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.QuyenSach"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update book copy information (ThuThu only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Update book copy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated book copy information",
+                        "name": "bookCopy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.QuyenSach"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book copy updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a book copy (ThuThu only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Delete book copy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book copy deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete book copy currently on loan",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -573,33 +1088,32 @@
                 }
             }
         },
-        "/api/site/{siteID}/readers/{maDG}": {
+        "/api/site/{siteID}/readers": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get detailed information about a reader at the current site",
+                "description": "Get all readers registered at the current site",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Readers"
                 ],
-                "summary": "Get reader information",
+                "summary": "Get all readers at site",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Reader ID",
-                        "name": "maDG",
-                        "in": "path",
-                        "required": true
+                        "description": "Search term for reader name",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Reader information retrieved successfully",
+                        "description": "Readers retrieved successfully",
                         "schema": {
                             "allOf": [
                                 {
@@ -609,15 +1123,67 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.ReaderInfoResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DocGia"
+                                            }
                                         }
                                     }
                                 }
                             ]
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new reader at the current site (ThuThu only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Create new reader",
+                "parameters": [
+                    {
+                        "description": "Reader information",
+                        "name": "reader",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DocGia"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Reader created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
                     "400": {
-                        "description": "Reader ID is required",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -629,13 +1195,219 @@
                         }
                     },
                     "403": {
-                        "description": "Access denied to this site",
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Reader already exists",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/site/{siteID}/readers/{maDG}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get reader information by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Get reader by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reader ID",
+                        "name": "maDG",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reader found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.DocGia"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Reader not found at this site",
+                        "description": "Reader not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update reader information (ThuThu only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Update reader",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reader ID",
+                        "name": "maDG",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated reader information",
+                        "name": "reader",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DocGia"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reader updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Reader not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a reader (ThuThu only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Readers"
+                ],
+                "summary": "Delete reader",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reader ID",
+                        "name": "maDG",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reader deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Reader not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete reader with active borrows",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -1156,27 +1928,6 @@
                         "Bị hỏng"
                     ],
                     "example": "Có sẵn"
-                }
-            }
-        },
-        "models.ReaderInfoResponse": {
-            "description": "Reader information with borrow history",
-            "type": "object",
-            "properties": {
-                "docGia": {
-                    "description": "Reader information",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.DocGia"
-                        }
-                    ]
-                },
-                "phieuMuons": {
-                    "description": "Borrow history",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.PhieuMuon"
-                    }
                 }
             }
         },

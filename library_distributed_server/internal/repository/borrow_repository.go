@@ -16,16 +16,16 @@ func NewBorrowRepository(config *config.Config) *BorrowRepository {
 	}
 }
 
-// CreateBorrow implements FR2 - Lập phiếu mượn sách
+// CreateBorrow implements FR2 - Lập phiếu mượn sách using sp_ThuThu_CreatePhieuMuon
 func (r *BorrowRepository) CreateBorrow(maDG, maQuyenSach, maCN string) (*models.PhieuMuon, error) {
 	conn, err := r.GetConnection(maCN)
 	if err != nil {
 		return nil, err
 	}
 
-	// Call stored procedure sp_LapPhieuMuon
-	query := "EXEC sp_LapPhieuMuon @MaDG = ?, @MaQuyenSach = ?, @MaCN = ?"
-	_, err = conn.Exec(query, maDG, maQuyenSach, maCN)
+	// Call stored procedure sp_ThuThu_CreatePhieuMuon
+	query := "EXEC sp_ThuThu_CreatePhieuMuon @MaDG = ?, @MaQuyenSach = ?"
+	_, err = conn.Exec(query, maDG, maQuyenSach)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create borrow record: %w", err)
 	}
@@ -34,31 +34,47 @@ func (r *BorrowRepository) CreateBorrow(maDG, maQuyenSach, maCN string) (*models
 	return r.GetLatestBorrow(maDG, maCN)
 }
 
-// ReturnBook implements FR3 - Ghi nhận trả sách
+// ReturnBook implements FR3 - Ghi nhận trả sách using sp_ThuThu_ReturnBook
 func (r *BorrowRepository) ReturnBook(maPhieuMuon int, maQuyenSach, siteID string) error {
 	conn, err := r.GetConnection(siteID)
 	if err != nil {
 		return err
 	}
 
-	// Call stored procedure sp_GhiNhanTraSach
-	var query string
-	var args []interface{}
-
-	if maPhieuMuon > 0 {
-		query = "EXEC sp_GhiNhanTraSach @MaPhieuMuon = ?"
-		args = []interface{}{maPhieuMuon}
-	} else {
-		query = "EXEC sp_GhiNhanTraSach @MaQuyenSach = ?"
-		args = []interface{}{maQuyenSach}
-	}
-
-	_, err = conn.Exec(query, args...)
+	// Call stored procedure sp_ThuThu_ReturnBook
+	query := "EXEC sp_ThuThu_ReturnBook @MaQuyenSach = ?"
+	_, err = conn.Exec(query, maQuyenSach)
 	if err != nil {
 		return fmt.Errorf("failed to return book: %w", err)
 	}
 
 	return nil
+}
+
+// ReadPhieuMuon retrieves borrow record using sp_ThuThu_ReadPhieuMuon
+func (r *BorrowRepository) ReadPhieuMuon(maPM int, siteID string) (*models.PhieuMuon, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := "EXEC sp_ThuThu_ReadPhieuMuon @MaPM = ?"
+	row := conn.QueryRow(query, maPM)
+
+	var phieuMuon models.PhieuMuon
+	err = row.Scan(
+		&phieuMuon.MaPM,
+		&phieuMuon.MaDG,
+		&phieuMuon.MaQuyenSach,
+		&phieuMuon.MaCN,
+		&phieuMuon.NgayMuon,
+		&phieuMuon.NgayTra,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &phieuMuon, nil
 }
 
 // GetBorrows gets borrow records for a site (FR4 - Tra cứu cục bộ)
@@ -100,42 +116,35 @@ func (r *BorrowRepository) GetBorrows(siteID string) ([]models.PhieuMuon, error)
 	return borrows, nil
 }
 
-// GetSystemStats implements FR6 - Thống kê toàn hệ thống
+// GetSystemStats implements FR6 - Thống kê toàn hệ thống using sp_QuanLy_GetSiteStatistics
 func (r *BorrowRepository) GetSystemStats() (*models.SystemStats, error) {
-	// Use Q1 as coordinator site
-	conn, err := r.GetConnection("Q1")
+	// Get statistics from all sites
+	connections, err := r.GetAllSiteConnections()
 	if err != nil {
 		return nil, err
 	}
-
-	// Call stored procedure sp_ThongKeToanHeThong
-	rows, err := conn.Query("EXEC sp_ThongKeToanHeThong")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	stats := &models.SystemStats{
 		StatsBySite: make(map[string]models.SiteStats),
 	}
 
-	for rows.Next() {
-		var siteID string
-		var booksOnLoan, totalBooks, totalReaders int
+	for siteID, conn := range connections {
+		// Call stored procedure sp_QuanLy_GetSiteStatistics
+		row := conn.QueryRow("EXEC sp_QuanLy_GetSiteStatistics")
 
-		err := rows.Scan(&siteID, &booksOnLoan, &totalBooks, &totalReaders)
+		var siteStats models.SiteStats
+		err := row.Scan(
+			&siteStats.BooksOnLoan,
+			&siteStats.TotalBooks,
+			&siteStats.TotalReaders,
+		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get stats from site %s: %w", siteID, err)
 		}
 
-		stats.StatsBySite[siteID] = models.SiteStats{
-			SiteID:       siteID,
-			BooksOnLoan:  booksOnLoan,
-			TotalBooks:   totalBooks,
-			TotalReaders: totalReaders,
-		}
-
-		stats.TotalBooksOnLoan += booksOnLoan
+		siteStats.SiteID = siteID
+		stats.StatsBySite[siteID] = siteStats
+		stats.TotalBooksOnLoan += siteStats.BooksOnLoan
 	}
 
 	return stats, nil
@@ -169,21 +178,4 @@ func (r *BorrowRepository) GetLatestBorrow(maDG, siteID string) (*models.PhieuMu
 	}
 
 	return &borrow, nil
-}
-
-// GetReaderInfo gets reader information
-func (r *BorrowRepository) GetReaderInfo(maDG, siteID string) (*models.DocGia, error) {
-	conn, err := r.GetConnection(siteID)
-	if err != nil {
-		return nil, err
-	}
-
-	query := "SELECT MaDG, HoTen, MaCN_DangKy FROM DOCGIA WHERE MaDG = ?"
-	var reader models.DocGia
-	err = conn.QueryRow(query, maDG).Scan(&reader.MaDG, &reader.HoTen, &reader.MaCNDangKy)
-	if err != nil {
-		return nil, err
-	}
-
-	return &reader, nil
 }

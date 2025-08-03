@@ -65,10 +65,13 @@ func main() {
 	userRepo := repository.NewUserRepository(cfg, SITE_ID)
 	bookRepo := repository.NewBookRepository(cfg)
 	borrowRepo := repository.NewBorrowRepository(cfg)
+	readerRepo := repository.NewReaderRepository(cfg)
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	bookHandler := handlers.NewBookHandler(bookRepo, SITE_ID)
 	borrowHandler := handlers.NewBorrowHandler(borrowRepo, SITE_ID)
-	router := setupRouter(authHandler, bookHandler, borrowHandler)
+	readerHandler := handlers.NewReaderHandler(readerRepo, SITE_ID)
+	managerHandler := handlers.NewManagerHandler(bookRepo, borrowRepo, readerRepo)
+	router := setupRouter(authHandler, bookHandler, borrowHandler, readerHandler, managerHandler)
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,
@@ -95,7 +98,13 @@ func main() {
 	log.Println("Server exited")
 }
 
-func setupRouter(authHandler *handlers.AuthHandler, bookHandler *handlers.BookHandler, borrowHandler *handlers.BorrowHandler) *gin.Engine {
+func setupRouter(
+	authHandler *handlers.AuthHandler,
+	bookHandler *handlers.BookHandler,
+	borrowHandler *handlers.BorrowHandler,
+	readerHandler *handlers.ReaderHandler,
+	managerHandler *handlers.ManagerHandler,
+) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -131,24 +140,51 @@ func setupRouter(authHandler *handlers.AuthHandler, bookHandler *handlers.BookHa
 	api := router.Group("/api")
 	api.Use(authHandler.RequireAuth())
 	{
+		// Site-specific routes (ThuThu access)
 		siteRoutes := api.Group("/site/" + SITE_ID)
 		siteRoutes.Use(authHandler.RequireSiteAccess(SITE_ID))
 		{
+			// Book operations
 			siteRoutes.GET("/books", bookHandler.GetBooks)
 			siteRoutes.GET("/book-copies", bookHandler.GetBookCopies)
 			siteRoutes.GET("/books/:isbn", bookHandler.GetBookByISBN)
 			siteRoutes.GET("/books/:isbn/available", bookHandler.GetAvailableBookCopy)
 
-			siteRoutes.POST("/borrow", borrowHandler.CreateBorrow)
-			siteRoutes.PUT("/return/:id", borrowHandler.ReturnBook)
+			// FR9 - Book copy CRUD (ThuThu only)
+			siteRoutes.POST("/book-copies", authHandler.RequireRole("THUTHU"), bookHandler.CreateQuyenSach)
+			siteRoutes.GET("/book-copies/:maQuyenSach", bookHandler.GetQuyenSach)
+			siteRoutes.PUT("/book-copies/:maQuyenSach", authHandler.RequireRole("THUTHU"), bookHandler.UpdateQuyenSach)
+			siteRoutes.DELETE("/book-copies/:maQuyenSach", authHandler.RequireRole("THUTHU"), bookHandler.DeleteQuyenSach)
+
+			// FR2, FR3 - Borrowing operations
+			siteRoutes.POST("/borrow", authHandler.RequireRole("THUTHU"), borrowHandler.CreateBorrow)
+			siteRoutes.PUT("/return/:id", authHandler.RequireRole("THUTHU"), borrowHandler.ReturnBook)
 			siteRoutes.GET("/borrows", borrowHandler.GetBorrows)
-			siteRoutes.GET("/readers/:maDG", borrowHandler.GetReaderInfo)
+
+			// FR8 - Reader CRUD operations
+			siteRoutes.GET("/readers", readerHandler.GetAllDocGia)
+			siteRoutes.POST("/readers", authHandler.RequireRole("THUTHU"), readerHandler.CreateDocGia)
+			siteRoutes.GET("/readers/:maDG", readerHandler.GetDocGia)
+			siteRoutes.PUT("/readers/:maDG", authHandler.RequireRole("THUTHU"), readerHandler.UpdateDocGia)
+			siteRoutes.DELETE("/readers/:maDG", authHandler.RequireRole("THUTHU"), readerHandler.DeleteDocGia)
 		}
+
+		// Manager routes (QuanLy access only)
 		managerRoutes := api.Group("/manager")
 		managerRoutes.Use(authHandler.RequireRole("QUANLY"))
 		{
-			managerRoutes.GET("/books/search", bookHandler.SearchBooks)
-			managerRoutes.GET("/stats", borrowHandler.GetStats)
+			// FR10 - Book catalog management with 2PC
+			managerRoutes.POST("/books", managerHandler.CreateSach)
+			managerRoutes.GET("/books/:isbn", managerHandler.GetSach)
+
+			// FR7 - Distributed book search
+			managerRoutes.GET("/books/search", managerHandler.SearchAvailableBooks)
+
+			// FR6 - System statistics
+			managerRoutes.GET("/statistics", managerHandler.GetSystemStats)
+
+			// FR11 - Global reader access
+			managerRoutes.GET("/readers", managerHandler.GetAllReaders)
 		}
 	}
 	return router
