@@ -1,14 +1,15 @@
 import 'package:chopper/chopper.dart';
 import 'package:library_distributed_app/data/models/book.dart';
 import 'package:library_distributed_app/data/models/book_list.dart';
-import 'package:library_distributed_app/data/models/paging.dart';
 
 part 'book_service.chopper.dart';
 
 @ChopperApi(baseUrl: '/books')
 abstract class BookService extends ChopperService {
   @GET(path: '/')
-  Future<Response<BookListModel>> getBookList(@Query() PagingModel paging);
+  Future<Response<BookListModel>> getBookList(
+    @QueryMap() Map<String, dynamic> paging,
+  );
 
   @POST(path: '/')
   Future<Response<BookModel>> addBook(@Body() BookModel book);

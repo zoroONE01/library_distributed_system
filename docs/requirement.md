@@ -1,8 +1,8 @@
 # Yêu cầu Hệ thống Quản lý Thư viện Phân tán
 
 **Tên dự án:** Hệ thống Quản lý cho Chuỗi Thư viện
-**Phiên bản:** 1.0
-**Ngày:** 13/07/2025
+**Phiên bản:** 1.1
+**Ngày:** 03/08/2025
 
 ## 1. Giới thiệu
 
@@ -97,15 +97,20 @@ Hệ thống sẽ được triển khai trên môi trường giả lập gồm �
 1. **Thủ thư (THUTHU):**
     * Chỉ có thể đăng nhập và làm việc tại chi nhánh của mình.
     * Có quyền tạo phiếu mượn, ghi nhận trả sách cho độc giả tại chi nhánh.
+    * Có quyền quản lý (CRUD) thông tin độc giả và quyển sách tại chi nhánh của mình.
     * Chỉ có thể tra cứu thông tin độc giả, sách, và phiếu mượn thuộc chi nhánh của mình.
+
 2. **Quản lý (QUANLY):**
     * Có thể đăng nhập từ bất kỳ đâu.
     * Có quyền xem thống kê mượn/trả trên toàn bộ hệ thống.
     * Có quyền tra cứu thông tin một quyển sách hoặc một độc giả trên toàn bộ hệ thống.
+    * Có quyền quản lý (CRUD) thông tin đầu sách trên toàn hệ thống.
 
 ## 5. Yêu cầu chức năng (Functional Requirements)
 
 ### 5.1. Chức năng cho Thủ thư
+
+#### 5.1.1. Chức năng cơ bản
 
 * **FR1: Đăng nhập:** Thủ thư đăng nhập bằng tài khoản được cấp.
 * **FR2: Lập phiếu mượn sách:**
@@ -119,7 +124,23 @@ Hệ thống sẽ được triển khai trên môi trường giả lập gồm �
   * Cập nhật `TinhTrang` của quyển sách trong bảng `QUYENSACH` thành "Có sẵn".
 * **FR4: Tra cứu cục bộ:** Thủ thư có thể tìm kiếm sách, độc giả, phiếu mượn trong phạm vi chi nhánh của mình.
 
+#### 5.1.2. CRUD Độc giả (Cục bộ)
+
+* **FR8: Quản lý độc giả:** Thủ thư có thể thêm, sửa, xóa, tra cứu thông tin độc giả tại chi nhánh của mình.
+  * Tạo mới: Hệ thống tự động gán `MaCN_DangKy` là chi nhánh của thủ thư.
+  * Cập nhật: Không được thay đổi `MaCN_DangKy` (khóa phân mảnh).
+  * Xóa: Chỉ được xóa nếu độc giả không có phiếu mượn đang hoạt động.
+
+#### 5.1.3. CRUD Quyển sách (Cục bộ)
+
+* **FR9: Quản lý quyển sách:** Thủ thư có thể thêm, sửa, xóa, tra cứu quyển sách tại chi nhánh của mình.
+  * Tạo mới: Chọn đầu sách từ bảng `SACH`, hệ thống tự động gán `MaCN`.
+  * Cập nhật: Không được thay đổi `MaCN` (khóa phân mảnh).
+  * Xóa: Chỉ được xóa nếu quyển sách không đang được mượn.
+
 ### 5.2. Chức năng cho Quản lý
+
+#### 5.2.1. Chức năng thống kê
 
 * **FR5: Đăng nhập:** Quản lý đăng nhập bằng tài khoản của mình.
 * **FR6: Thống kê toàn hệ thống (Truy vấn phân tán):**
@@ -129,3 +150,26 @@ Hệ thống sẽ được triển khai trên môi trường giả lập gồm �
   * Quản lý (hoặc độc giả) tìm một đầu sách theo tên (ví dụ: 'Lược sử loài người').
   * Hệ thống truy vấn bảng `SACH` (nhân bản) để lấy ISBN.
   * Sau đó, hệ thống gửi truy vấn đến **tất cả các site** để tìm trong bảng `QUYENSACH` xem chi nhánh nào còn quyển sách đó với tình trạng "Có sẵn" và hiển thị cho người dùng.
+
+#### 5.2.2. CRUD Đầu sách (Toàn hệ thống)
+
+* **FR10: Quản lý đầu sách:** Quản lý có thể thêm, sửa, xóa, tra cứu thông tin đầu sách trên toàn hệ thống.
+  * Tạo/Cập nhật/Xóa: Sử dụng giao thức 2PC để đồng bộ trên **tất cả các site**.
+  * Xóa: Chỉ được xóa nếu không còn quyển sách nào tồn tại trên tất cả các site.
+
+#### 5.2.3. Tra cứu toàn hệ thống
+
+* **FR11: Tra cứu độc giả và lịch sử:** Quản lý có thể tra cứu thông tin độc giả và lịch sử mượn/trả trên toàn bộ hệ thống (truy vấn phân tán).
+
+## 6. Ràng buộc kỹ thuật
+
+### 6.1. Ràng buộc dữ liệu
+
+* Khóa phân mảnh (`MaCN`, `MaCN_DangKy`) không được thay đổi sau khi tạo bản ghi.
+* Thao tác xóa chỉ được phép khi không vi phạm ràng buộc tham chiếu.
+
+### 6.2. Ràng buộc phân tán
+
+* Thao tác trên bảng nhân bản (`SACH`) phải sử dụng giao thức 2PC.
+* Thao tác trên bảng phân mảnh chỉ thực hiện tại site tương ứng.
+* Truy vấn tra cứu có thể cần gửi đến nhiều site và tổng hợp kết quả.

@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'paging.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class PagingModel {
   final int page;
   final int size;

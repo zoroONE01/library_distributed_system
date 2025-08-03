@@ -53,7 +53,7 @@ class BookRepositoryImpl implements BookRepository {
   @override
   Future<BookListModel> getBookList(PagingModel paging) async {
     try {
-      final response = await _service.getBookList(paging);
+      final response = await _service.getBookList(paging.toJson());
       if (response.isSuccessful && response.body != null) {
         return response.body!;
       } else {
