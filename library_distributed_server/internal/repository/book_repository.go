@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"library_distributed_server/internal/config"
 	"library_distributed_server/internal/models"
+	"library_distributed_server/pkg/utils"
 )
 
 type BookRepository struct {
@@ -15,6 +16,186 @@ func NewBookRepository(config *config.Config) *BookRepository {
 	return &BookRepository{
 		BaseRepository: NewBaseRepository(config),
 	}
+}
+
+// GetBooksPaginated gets books with pagination support
+func (r *BookRepository) GetBooksPaginated(siteID string, pagination utils.PaginationParams) (*PaginatedResult, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get total count
+	countQuery := "SELECT COUNT(*) FROM SACH"
+	totalCount, err := r.GetTotalCount(conn, countQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get paginated data
+	baseQuery := "SELECT ISBN, TenSach, TacGia FROM SACH"
+	paginatedQuery := r.BuildPaginatedQuery(baseQuery, pagination)
+
+	rows, err := conn.Query(paginatedQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []models.Sach
+	for rows.Next() {
+		var book models.Sach
+		err := rows.Scan(&book.ISBN, &book.TenSach, &book.TacGia)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+
+	return &PaginatedResult{
+		Data:       books,
+		TotalCount: totalCount,
+		Pagination: pagination,
+	}, nil
+}
+
+// GetBooksWithAvailabilityPaginated gets books with availability count and pagination
+func (r *BookRepository) GetBooksWithAvailabilityPaginated(siteID string, userRole string, pagination utils.PaginationParams) (*PaginatedResult, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get total count of books
+	countQuery := "SELECT COUNT(*) FROM SACH"
+	totalCount, err := r.GetTotalCount(conn, countQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get paginated book titles
+	baseQuery := "SELECT ISBN, TenSach, TacGia FROM SACH"
+	paginatedQuery := r.BuildPaginatedQuery(baseQuery, pagination)
+
+	rows, err := conn.Query(paginatedQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sitesToQuery []string
+	if userRole == "QUANLY" {
+		sitesToQuery = []string{"Q1", "Q3"}
+	} else {
+		sitesToQuery = []string{siteID}
+	}
+
+	books := make([]models.BookWithAvailability, 0)
+
+	for rows.Next() {
+		var book models.BookWithAvailability
+		err := rows.Scan(&book.ISBN, &book.TenSach, &book.TacGia)
+		if err != nil {
+			continue
+		}
+
+		// Count availability across required sites
+		var totalCount, availableCount, borrowedCount int
+
+		for _, site := range sitesToQuery {
+			siteConn, err := r.GetConnection(site)
+			if err != nil {
+				continue
+			}
+
+			// Count total copies
+			countQuery := "SELECT COUNT(*) FROM QUYENSACH WHERE ISBN = ? AND MaCN = ?"
+			var siteTotal int
+			siteConn.QueryRow(countQuery, book.ISBN, site).Scan(&siteTotal)
+			totalCount += siteTotal
+
+			// Count available copies
+			availQuery := "SELECT COUNT(*) FROM QUYENSACH WHERE ISBN = ? AND MaCN = ? AND TinhTrang = 'Có sẵn'"
+			var siteAvailable int
+			siteConn.QueryRow(availQuery, book.ISBN, site).Scan(&siteAvailable)
+			availableCount += siteAvailable
+		}
+
+		borrowedCount = totalCount - availableCount
+
+		book.TotalCount = totalCount
+		book.AvailableCount = availableCount
+		book.BorrowedCount = borrowedCount
+
+		books = append(books, book)
+	}
+
+	return &PaginatedResult{
+		Data:       books,
+		TotalCount: totalCount,
+		Pagination: pagination,
+	}, nil
+}
+
+// GetBookCopiesPaginated gets book copies with pagination support
+func (r *BookRepository) GetBookCopiesPaginated(siteID string, pagination utils.PaginationParams, searchTerm string) (*PaginatedResult, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build base queries
+	var baseQuery, countQuery string
+	var args []interface{}
+
+	if searchTerm != "" {
+		baseQuery = `
+			SELECT qs.MaQuyenSach, qs.ISBN, qs.MaCN, qs.TinhTrang 
+			FROM QUYENSACH qs 
+			JOIN SACH s ON qs.ISBN = s.ISBN 
+			WHERE s.TenSach LIKE ? OR s.TacGia LIKE ? OR qs.ISBN LIKE ?`
+		countQuery = `
+			SELECT COUNT(*) 
+			FROM QUYENSACH qs 
+			JOIN SACH s ON qs.ISBN = s.ISBN 
+			WHERE s.TenSach LIKE ? OR s.TacGia LIKE ? OR qs.ISBN LIKE ?`
+		searchPattern := "%" + searchTerm + "%"
+		args = []interface{}{searchPattern, searchPattern, searchPattern}
+	} else {
+		baseQuery = "SELECT MaQuyenSach, ISBN, MaCN, TinhTrang FROM QUYENSACH"
+		countQuery = "SELECT COUNT(*) FROM QUYENSACH"
+	}
+
+	// Get total count
+	totalCount, err := r.GetTotalCount(conn, countQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get paginated data
+	paginatedQuery := r.BuildPaginatedQuery(baseQuery, pagination)
+
+	rows, err := conn.Query(paginatedQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var copies []models.QuyenSach
+	for rows.Next() {
+		var copy models.QuyenSach
+		err := rows.Scan(&copy.MaQuyenSach, &copy.ISBN, &copy.MaCN, &copy.TinhTrang)
+		if err != nil {
+			return nil, err
+		}
+		copies = append(copies, copy)
+	}
+
+	return &PaginatedResult{
+		Data:       copies,
+		TotalCount: totalCount,
+		Pagination: pagination,
+	}, nil
 }
 
 // GetBooks gets all books (replicated data) from any site
@@ -38,6 +219,75 @@ func (r *BookRepository) GetBooks(siteID string) ([]models.Sach, error) {
 		if err != nil {
 			return nil, err
 		}
+		books = append(books, book)
+	}
+
+	return books, nil
+}
+
+// GetBooksWithAvailability gets all books with availability count
+func (r *BookRepository) GetBooksWithAvailability(siteID string, userRole string) ([]models.BookWithAvailability, error) {
+	conn, err := r.GetConnection(siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query for books with availability count
+	var sitesToQuery []string
+
+	if userRole == "QUANLY" {
+		// Manager sees system-wide data
+		sitesToQuery = []string{"Q1", "Q3"}
+	} else {
+		// Librarian sees only local data
+		sitesToQuery = []string{siteID}
+	}
+
+	books := make([]models.BookWithAvailability, 0)
+
+	// Get all book titles first
+	titleQuery := "SELECT ISBN, TenSach, TacGia FROM SACH ORDER BY TenSach"
+	rows, err := conn.Query(titleQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var book models.BookWithAvailability
+		err := rows.Scan(&book.ISBN, &book.TenSach, &book.TacGia)
+		if err != nil {
+			continue
+		}
+
+		// Count availability across required sites
+		var totalCount, availableCount, borrowedCount int
+
+		for _, site := range sitesToQuery {
+			siteConn, err := r.GetConnection(site)
+			if err != nil {
+				continue
+			}
+
+			// Count total copies
+			countQuery := "SELECT COUNT(*) FROM QUYENSACH WHERE ISBN = ? AND MaCN = ?"
+			var siteTotal int
+			siteConn.QueryRow(countQuery, book.ISBN, site).Scan(&siteTotal)
+			totalCount += siteTotal
+
+			// Count available copies
+			availQuery := "SELECT COUNT(*) FROM QUYENSACH WHERE ISBN = ? AND MaCN = ? AND TinhTrang = 'Có sẵn'"
+			var siteAvailable int
+			siteConn.QueryRow(availQuery, book.ISBN, site).Scan(&siteAvailable)
+			availableCount += siteAvailable
+		}
+
+		borrowedCount = totalCount - availableCount
+
+		book.TotalCount = totalCount
+		book.AvailableCount = availableCount
+		book.BorrowedCount = borrowedCount
+
 		books = append(books, book)
 	}
 

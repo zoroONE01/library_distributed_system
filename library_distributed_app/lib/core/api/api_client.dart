@@ -17,17 +17,17 @@ import '../constants/enums.dart';
 
 part 'api_client.g.dart';
 
-final _interceptors = [const AuthInterceptor(), const LoggingInterceptor()];
+const _interceptors = [AuthInterceptor(), LoggingInterceptor()];
 
-final _services = [AuthService.create(), BookService.create()];
-
-final _converter = const JsonSerializableConverter({
+const _converter = JsonSerializableConverter({
   AuthInfoModel: AuthInfoModel.fromJson,
   UserInfoModel: UserInfoModel.fromJson,
   PagingModel: PagingModel.fromJson,
   BookListModel: BookListModel.fromJson,
   BookModel: BookModel.fromJson,
 });
+
+final _services = [AuthService.create(), BookService.create()];
 
 @Riverpod(keepAlive: true)
 ChopperClient apiClient(Ref ref) {
@@ -46,5 +46,18 @@ ChopperClient apiClient(Ref ref) {
 
   ref.onDispose(client.dispose);
 
+  return client;
+}
+
+@riverpod
+ChopperClient apiClientCoordinator(Ref ref) {
+  final client = ChopperClient(
+    baseUrl: Uri.tryParse(ApiEndPoints.coordinatorBaseUrl),
+    services: _services,
+    converter: _converter,
+    interceptors: _interceptors,
+  );
+
+  ref.onDispose(client.dispose);
   return client;
 }

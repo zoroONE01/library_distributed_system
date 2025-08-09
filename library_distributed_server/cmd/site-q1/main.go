@@ -71,7 +71,9 @@ func main() {
 	borrowHandler := handlers.NewBorrowHandler(borrowRepo, SITE_ID)
 	readerHandler := handlers.NewReaderHandler(readerRepo, SITE_ID)
 	managerHandler := handlers.NewManagerHandler(bookRepo, borrowRepo, readerRepo)
-	router := setupRouter(authHandler, bookHandler, borrowHandler, readerHandler, managerHandler)
+	statsHandler := handlers.NewStatsHandler(repository.NewStatsRepository(cfg), SITE_ID)
+
+	router := setupRouter(authHandler, bookHandler, borrowHandler, readerHandler, managerHandler, statsHandler)
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,
@@ -104,6 +106,7 @@ func setupRouter(
 	borrowHandler *handlers.BorrowHandler,
 	readerHandler *handlers.ReaderHandler,
 	managerHandler *handlers.ManagerHandler,
+	statsHandler *handlers.StatsHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -137,55 +140,80 @@ func setupRouter(
 		authGroup.GET("/profile", authHandler.RequireAuth(), authHandler.GetCurrentUser)
 	}
 
-	api := router.Group("/api")
-	api.Use(authHandler.RequireAuth())
+	// Universal routes - role-based access control applied within handlers
+	// These routes can be accessed from any site based on user role and permissions
+
+	// Book operations - accessible to all authenticated users with appropriate role checks
+	booksGroup := router.Group("/books")
+	booksGroup.Use(authHandler.RequireAuth())
 	{
-		// Site-specific routes (ThuThu access)
-		siteRoutes := api.Group("/site/" + SITE_ID)
-		siteRoutes.Use(authHandler.RequireSiteAccess(SITE_ID))
-		{
-			// Book operations
-			siteRoutes.GET("/books", bookHandler.GetBooks)
-			siteRoutes.GET("/book-copies", bookHandler.GetBookCopies)
-			siteRoutes.GET("/books/:isbn", bookHandler.GetBookByISBN)
-			siteRoutes.GET("/books/:isbn/available", bookHandler.GetAvailableBookCopy)
-
-			// FR9 - Book copy CRUD (ThuThu only)
-			siteRoutes.POST("/book-copies", authHandler.RequireRole("THUTHU"), bookHandler.CreateQuyenSach)
-			siteRoutes.GET("/book-copies/:maQuyenSach", bookHandler.GetQuyenSach)
-			siteRoutes.PUT("/book-copies/:maQuyenSach", authHandler.RequireRole("THUTHU"), bookHandler.UpdateQuyenSach)
-			siteRoutes.DELETE("/book-copies/:maQuyenSach", authHandler.RequireRole("THUTHU"), bookHandler.DeleteQuyenSach)
-
-			// FR2, FR3 - Borrowing operations
-			siteRoutes.POST("/borrow", authHandler.RequireRole("THUTHU"), borrowHandler.CreateBorrow)
-			siteRoutes.PUT("/return/:id", authHandler.RequireRole("THUTHU"), borrowHandler.ReturnBook)
-			siteRoutes.GET("/borrows", borrowHandler.GetBorrows)
-
-			// FR8 - Reader CRUD operations
-			siteRoutes.GET("/readers", readerHandler.GetAllDocGia)
-			siteRoutes.POST("/readers", authHandler.RequireRole("THUTHU"), readerHandler.CreateDocGia)
-			siteRoutes.GET("/readers/:maDG", readerHandler.GetDocGia)
-			siteRoutes.PUT("/readers/:maDG", authHandler.RequireRole("THUTHU"), readerHandler.UpdateDocGia)
-			siteRoutes.DELETE("/readers/:maDG", authHandler.RequireRole("THUTHU"), readerHandler.DeleteDocGia)
-		}
-
-		// Manager routes (QuanLy access only)
-		managerRoutes := api.Group("/manager")
-		managerRoutes.Use(authHandler.RequireRole("QUANLY"))
-		{
-			// FR10 - Book catalog management with 2PC
-			managerRoutes.POST("/books", managerHandler.CreateSach)
-			managerRoutes.GET("/books/:isbn", managerHandler.GetSach)
-
-			// FR7 - Distributed book search
-			managerRoutes.GET("/books/search", managerHandler.SearchAvailableBooks)
-
-			// FR6 - System statistics
-			managerRoutes.GET("/statistics", managerHandler.GetSystemStats)
-
-			// FR11 - Global reader access
-			managerRoutes.GET("/readers", managerHandler.GetAllReaders)
-		}
+		booksGroup.GET("", bookHandler.GetBooks)                             // All roles: view book catalog
+		booksGroup.GET("/:isbn", bookHandler.GetBookByISBN)                  // All roles: view book details
+		booksGroup.GET("/:isbn/available", bookHandler.GetAvailableBookCopy) // All roles: check availability
 	}
+
+	// Book copies operations - site and role specific
+	bookCopiesGroup := router.Group("/book-copies")
+	bookCopiesGroup.Use(authHandler.RequireAuth())
+	{
+		bookCopiesGroup.GET("", bookHandler.GetBookCopies)                                                                            // All roles: view copies
+		bookCopiesGroup.POST("", authHandler.ValidateOperationAccess("CREATE_BOOK_COPY"), bookHandler.CreateQuyenSach)                // FR9: THUTHU only
+		bookCopiesGroup.GET("/:maQuyenSach", bookHandler.GetQuyenSach)                                                                // All roles: view copy details
+		bookCopiesGroup.PUT("/:maQuyenSach", authHandler.ValidateOperationAccess("UPDATE_BOOK_COPY"), bookHandler.UpdateQuyenSach)    // FR9: THUTHU only
+		bookCopiesGroup.DELETE("/:maQuyenSach", authHandler.ValidateOperationAccess("DELETE_BOOK_COPY"), bookHandler.DeleteQuyenSach) // FR9: THUTHU only
+	}
+
+	// Borrowing operations - THUTHU only at their site
+	borrowGroup := router.Group("/borrow")
+	borrowGroup.Use(authHandler.RequireAuth())
+	{
+		borrowGroup.POST("", authHandler.ValidateOperationAccess("BORROW_BOOK"), borrowHandler.CreateBorrow)         // FR2: THUTHU only
+		borrowGroup.PUT("/return/:id", authHandler.ValidateOperationAccess("RETURN_BOOK"), borrowHandler.ReturnBook) // FR3: THUTHU only
+		borrowGroup.GET("", borrowHandler.GetBorrows)                                                                // View borrows - role-based filtering in handler
+		borrowGroup.GET("/detailed", borrowHandler.GetBorrowRecordsWithDetails)                                      // Enhanced detailed view for Flutter
+	}
+
+	// Reader operations - site and role specific
+	readersGroup := router.Group("/readers")
+	readersGroup.Use(authHandler.RequireAuth())
+	{
+		readersGroup.GET("", readerHandler.GetAllDocGia)                                                                // Role-based: THUTHU sees local, QUANLY sees all
+		readersGroup.POST("", authHandler.ValidateOperationAccess("CREATE_READER"), readerHandler.CreateDocGia)         // FR8: THUTHU only
+		readersGroup.GET("/:maDG", readerHandler.GetDocGia)                                                             // Role-based: THUTHU sees local, QUANLY sees all
+		readersGroup.PUT("/:maDG", authHandler.ValidateOperationAccess("UPDATE_READER"), readerHandler.UpdateDocGia)    // FR8: THUTHU only
+		readersGroup.DELETE("/:maDG", authHandler.ValidateOperationAccess("DELETE_READER"), readerHandler.DeleteDocGia) // FR8: THUTHU only
+	}
+
+	// Statistics operations - Enhanced for Flutter
+	statsGroup := router.Group("/stats")
+	statsGroup.Use(authHandler.RequireAuth())
+	{
+		statsGroup.GET("/readers", statsHandler.GetReadersWithStats)                                                     // Enhanced reader statistics
+		statsGroup.GET("/system", authHandler.ValidateOperationAccess("VIEW_SYSTEM_STATS"), statsHandler.GetSystemStats) // Manager-only system stats
+	}
+
+	// Manager-only operations - system-wide access
+	managerGroup := router.Group("/manager")
+	managerGroup.Use(authHandler.RequireAuth())
+	managerGroup.Use(authHandler.RequireRole("QUANLY")) // Only QUANLY can access these endpoints
+	{
+		// FR10 - Book catalog management with 2PC
+		managerGroup.POST("/books", managerHandler.CreateSach)   // Create book in catalog
+		managerGroup.GET("/books/:isbn", managerHandler.GetSach) // Get book from catalog
+
+		// FR7 - Distributed book search
+		managerGroup.GET("/books/search", managerHandler.SearchAvailableBooks) // System-wide book search
+
+		// FR6 - System statistics
+		managerGroup.GET("/statistics", managerHandler.GetSystemStats) // System-wide statistics
+
+		// FR11 - Global reader access
+		managerGroup.GET("/readers", managerHandler.GetAllReaders) // System-wide reader access
+	}
+
+	// NOTE: Legacy site-specific routes with /site/{siteID} have been removed
+	// All operations now use role-based authentication with site info from JWT tokens
+	// This provides better security and eliminates the need for site parameters in URLs
+
 	return router
 }

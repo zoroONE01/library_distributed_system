@@ -60,30 +60,77 @@ type HealthResponse struct {
 	Protocols []string  `json:"protocols,omitempty" example:"HTTP,HTTPS,2PC"` // Supported protocols (optional)
 }
 
-// BookCopyResponse - Response with book copy information
-// @Description Book copy information with book details
-type BookCopyResponse struct {
-	QuyenSach QuyenSach `json:"quyenSach"` // Book copy information
-	Sach      Sach      `json:"sach"`      // Book information
+// BookWithAvailability - Book information with availability count
+// @Description Book information combined with availability count for client applications
+type BookWithAvailability struct {
+	ISBN           string `json:"isbn" example:"978-0-123456-78-9"` // Book ISBN (ID)
+	TenSach        string `json:"tenSach" example:"Lập trình Go"`   // Book title
+	TacGia         string `json:"tacGia" example:"Nguyễn Văn A"`    // Author name
+	AvailableCount int    `json:"availableCount" example:"5"`       // Available copies count
+	TotalCount     int    `json:"totalCount" example:"10"`          // Total copies count
+	BorrowedCount  int    `json:"borrowedCount" example:"5"`        // Currently borrowed count
 }
 
-// BorrowResponse - Response with borrow information
-// @Description Borrow transaction with related information
-type BorrowResponse struct {
-	PhieuMuon PhieuMuon `json:"phieuMuon"` // Borrow transaction
-	DocGia    DocGia    `json:"docGia"`    // Reader information
-	Sach      Sach      `json:"sach"`      // Book information
+// BorrowRecordWithDetails - Complete borrow record with all related information
+// @Description Borrow record with book and reader details for easy display
+type BorrowRecordWithDetails struct {
+	MaPM        int    `json:"maPM" example:"1"`                     // Borrow record ID
+	BookISBN    string `json:"bookIsbn" example:"978-0-123456-78-9"` // Book ISBN
+	BookTitle   string `json:"bookTitle" example:"Lập trình Go"`     // Book title
+	BookAuthor  string `json:"bookAuthor" example:"Nguyễn Văn A"`    // Book author
+	ReaderID    string `json:"readerId" example:"DG001"`             // Reader ID
+	ReaderName  string `json:"readerName" example:"Nguyễn Văn B"`    // Reader name
+	BorrowDate  string `json:"borrowDate" example:"2025-01-15"`      // Borrow date
+	DueDate     string `json:"dueDate" example:"2025-02-15"`         // Due date (calculated)
+	ReturnDate  string `json:"returnDate" example:"2025-01-20"`      // Return date (empty if not returned)
+	Status      string `json:"status" example:"Borrowed"`            // Status: "Borrowed", "Returned", "Overdue"
+	DaysOverdue int    `json:"daysOverdue" example:"0"`              // Days overdue (0 if not overdue)
+	BookCopyID  string `json:"bookCopyId" example:"QS001"`           // Book copy ID for operations
+	Branch      string `json:"branch" example:"Q1"`                  // Branch where transaction occurred
 }
 
-// ReaderInfoResponse - Reader information response
-// @Description Reader information with borrow history
-type ReaderInfoResponse struct {
-	DocGia     DocGia      `json:"docGia"`     // Reader information
-	PhieuMuons []PhieuMuon `json:"phieuMuons"` // Borrow history
+// ReaderWithStats - Reader information with borrowing statistics
+// @Description Reader information with borrowing statistics for better insights
+type ReaderWithStats struct {
+	MaDG            string `json:"maDG" example:"DG001"`                // Reader ID
+	HoTen           string `json:"hoTen" example:"Nguyễn Văn B"`        // Reader name
+	MaCNDangKy      string `json:"maCNDangKy" example:"Q1"`             // Registration branch
+	TotalBorrowed   int    `json:"totalBorrowed" example:"25"`          // Total books borrowed
+	CurrentBorrowed int    `json:"currentBorrowed" example:"3"`         // Currently borrowed books
+	OverdueBooks    int    `json:"overdueBooks" example:"1"`            // Overdue books count
+	LastBorrowDate  string `json:"lastBorrowDate" example:"2025-01-15"` // Last borrow date
 }
 
-// PaginatedResponse - Generic paginated response
-// @Description Generic paginated response wrapper
+// SystemStatsResponse - System-wide statistics for managers
+// @Description Comprehensive system statistics across all sites
+type SystemStatsResponse struct {
+	TotalBooks    int                    `json:"totalBooks" example:"1000"`                  // Total books in catalog
+	TotalCopies   int                    `json:"totalCopies" example:"5000"`                 // Total book copies
+	TotalReaders  int                    `json:"totalReaders" example:"2000"`                // Total registered readers
+	ActiveBorrows int                    `json:"activeBorrows" example:"500"`                // Currently borrowed books
+	OverdueBooks  int                    `json:"overdueBooks" example:"50"`                  // Overdue books
+	SiteStats     []SiteStats            `json:"siteStats"`                                  // Per-site statistics
+	PopularBooks  []BookWithAvailability `json:"popularBooks"`                               // Most borrowed books
+	GeneratedAt   string                 `json:"generatedAt" example:"2025-01-15T10:00:00Z"` // Stats generation time
+}
+
+// PagingInfo - Pagination information compatible with Flutter PagingModel
+// @Description Pagination information matching Flutter PagingModel structure
+type PagingInfo struct {
+	Page       int `json:"page" example:"0"`        // Current page number (0-based, matches Flutter)
+	Size       int `json:"size" example:"20"`       // Items per page (matches Flutter)
+	TotalPages int `json:"totalPages" example:"10"` // Total number of pages (matches Flutter)
+}
+
+// ListResponse - Generic list response with pagination compatible with Flutter BookListModel
+// @Description Generic paginated list response matching Flutter BookListModel structure
+type ListResponse struct {
+	Items  interface{} `json:"items"`  // List of items (matches Flutter items field)
+	Paging PagingInfo  `json:"paging"` // Pagination info (matches Flutter paging field)
+}
+
+// PaginatedResponse - Generic paginated response (deprecated, use ListResponse instead)
+// @Description Generic paginated response wrapper (deprecated)
 type PaginatedResponse struct {
 	Data       interface{} `json:"data"`                     // Response data
 	TotalCount int         `json:"totalCount" example:"100"` // Total number of items

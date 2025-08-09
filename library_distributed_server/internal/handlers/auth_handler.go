@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -204,10 +205,10 @@ func (h *AuthHandler) RequireRole(requiredRole string) gin.HandlerFunc {
 	}
 }
 
-// RequireSiteAccess middleware for site-specific access control
+// RequireSiteAccess middleware for site-specific access control based on user role and token claims
 func (h *AuthHandler) RequireSiteAccess(siteID string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims, exists := c.Get("claims")
+		claims, exists := GetClaims(c)
 		if !exists {
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Error: "Authentication required",
@@ -216,26 +217,137 @@ func (h *AuthHandler) RequireSiteAccess(siteID string) gin.HandlerFunc {
 			return
 		}
 
-		userClaims, ok := claims.(*auth.Claims)
-		if !ok {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error: "Invalid claims format",
+		// Apply role-based site access control per requirements
+		if !h.authService.CanAccessSite(claims, siteID) {
+			c.JSON(http.StatusForbidden, models.ErrorResponse{
+				Error: "Access denied to this site",
+				Details: gin.H{
+					"site":         siteID,
+					"userRole":     claims.Role,
+					"userSite":     claims.MaCN,
+					"requirements": "THUTHU can only access their branch site, QUANLY can access all sites",
+				},
 			})
 			c.Abort()
 			return
 		}
 
-		if !h.authService.CanAccessSite(userClaims, siteID) {
+		c.Next()
+	}
+}
+
+// RequireRoleOrSiteAccess middleware that allows access based on role OR site access
+// Used for endpoints that should be accessible to managers globally or librarians locally
+func (h *AuthHandler) RequireRoleOrSiteAccess(role string, siteID string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, exists := GetClaims(c)
+		if !exists {
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+				Error: "Authentication required",
+			})
+			c.Abort()
+			return
+		}
+
+		// Check if user has the required role (e.g., QUANLY can access everything)
+		hasRole := claims.Role == role
+		// Check if user can access the specific site (e.g., THUTHU can access their site)
+		hasSiteAccess := h.authService.CanAccessSite(claims, siteID)
+
+		if !hasRole && !hasSiteAccess {
 			c.JSON(http.StatusForbidden, models.ErrorResponse{
-				Error: "Access denied to this site",
+				Error: "Access denied",
 				Details: gin.H{
-					"site":     siteID,
-					"userRole": userClaims.Role,
-					"userSite": userClaims.MaCN,
+					"requiredRole":    role,
+					"requiredSite":    siteID,
+					"userRole":        claims.Role,
+					"userSite":        claims.MaCN,
+					"accessCondition": fmt.Sprintf("Need %s role OR access to site %s", role, siteID),
 				},
 			})
 			c.Abort()
 			return
+		}
+
+		c.Next()
+	}
+}
+
+// ValidateOperationAccess validates if user can perform specific operations based on their role and site
+func (h *AuthHandler) ValidateOperationAccess(operation string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, exists := GetClaims(c)
+		if !exists {
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+				Error: "Authentication required",
+			})
+			c.Abort()
+			return
+		}
+
+		// Set operation context for handlers to use
+		c.Set("operation", operation)
+		c.Set("userRole", claims.Role)
+		c.Set("userSite", claims.MaCN)
+
+		// Specific operation validations based on requirements
+		switch operation {
+		case "CREATE_BOOK_COPY", "UPDATE_BOOK_COPY", "DELETE_BOOK_COPY":
+			// FR9: Only THUTHU can CRUD book copies at their site
+			if claims.Role != "THUTHU" {
+				c.JSON(http.StatusForbidden, models.ErrorResponse{
+					Error: fmt.Sprintf("Access denied - %s operation requires THUTHU role", operation),
+					Details: gin.H{
+						"operation": operation,
+						"userRole":  claims.Role,
+						"required":  "THUTHU",
+					},
+				})
+				c.Abort()
+				return
+			}
+		case "BORROW_BOOK", "RETURN_BOOK":
+			// FR2, FR3: Only THUTHU can handle borrowing operations
+			if claims.Role != "THUTHU" {
+				c.JSON(http.StatusForbidden, models.ErrorResponse{
+					Error: fmt.Sprintf("Access denied - %s operation requires THUTHU role", operation),
+					Details: gin.H{
+						"operation": operation,
+						"userRole":  claims.Role,
+						"required":  "THUTHU",
+					},
+				})
+				c.Abort()
+				return
+			}
+		case "CREATE_READER", "UPDATE_READER", "DELETE_READER":
+			// FR8: Only THUTHU can CRUD readers at their site
+			if claims.Role != "THUTHU" {
+				c.JSON(http.StatusForbidden, models.ErrorResponse{
+					Error: fmt.Sprintf("Access denied - %s operation requires THUTHU role", operation),
+					Details: gin.H{
+						"operation": operation,
+						"userRole":  claims.Role,
+						"required":  "THUTHU",
+					},
+				})
+				c.Abort()
+				return
+			}
+		case "SYSTEM_STATS", "GLOBAL_SEARCH", "MANAGE_CATALOG":
+			// FR6, FR7, FR10: Only QUANLY can perform system-wide operations
+			if claims.Role != "QUANLY" {
+				c.JSON(http.StatusForbidden, models.ErrorResponse{
+					Error: fmt.Sprintf("Access denied - %s operation requires QUANLY role", operation),
+					Details: gin.H{
+						"operation": operation,
+						"userRole":  claims.Role,
+						"required":  "QUANLY",
+					},
+				})
+				c.Abort()
+				return
+			}
 		}
 
 		c.Next()
@@ -253,16 +365,3 @@ func GetClaims(c *gin.Context) (*auth.Claims, bool) {
 	return userClaims, ok
 }
 
-// Debug endpoint to check JWT configuration (development only)
-// @Summary Debug JWT configuration
-// @Description Check JWT secret configuration for debugging token issues
-// @Tags Authentication
-// @Produce json
-// @Success 200 {object} map[string]string "JWT configuration info"
-// @Router /auth/debug [get]
-func (h *AuthHandler) DebugJWT(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"jwt_secret_hash": h.authService.GetJWTSecretHash(),
-		"message":         "This endpoint should only be used in development",
-	})
-}

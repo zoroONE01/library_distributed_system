@@ -60,7 +60,7 @@ func NewCoordinatorHandler(coordinator *distributed.TwoPhaseCommitCoordinator) *
 	}
 }
 
-// TransferBook handles POST /api/coordinator/transfer-book
+// TransferBook handles POST /coordinator/transfer-book
 // Implements distributed book transfer using Two-Phase Commit protocol
 // @Summary Transfer book between sites using 2PC
 // @Description Transfer a book copy from one site to another using distributed transaction coordination
@@ -71,7 +71,7 @@ func NewCoordinatorHandler(coordinator *distributed.TwoPhaseCommitCoordinator) *
 // @Success 200 {object} models.TransferBookResponse "Book transferred successfully"
 // @Failure 400 {object} models.ErrorResponse "Invalid request format"
 // @Failure 500 {object} models.ErrorResponse "Failed to transfer book"
-// @Router /api/coordinator/transfer-book [post]
+// @Router /coordinator/transfer-book [post]
 func (h *CoordinatorHandler) TransferBook(c *gin.Context) {
 	var req TransferBookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -183,10 +183,10 @@ func setupRouter(_ *auth.AuthService, coordinatorHandler *CoordinatorHandler) *g
 	})
 
 	// Coordinator APIs (typically used by managers or system administrators)
-	api := router.Group("/api")
+	coordinatorGroup := router.Group("/coordinator")
 	{
 		// Public endpoint for academic demonstration
-		api.POST("/coordinator/transfer-book", coordinatorHandler.TransferBook)
+		coordinatorGroup.POST("/transfer-book", coordinatorHandler.TransferBook)
 
 		// Protected endpoints would require authentication in production
 		// For academic purposes, we keep it simple

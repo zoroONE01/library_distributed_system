@@ -38,22 +38,15 @@ func NewManagerHandler(
 // @Produce json
 // @Security BearerAuth
 // @Param book body models.Sach true "Book information"
-// @Success 201 {object} models.SuccessResponse "Book created successfully"
+// @Success 201 {object} models.Sach "Book created successfully"
 // @Failure 400 {object} models.ErrorResponse "Invalid request body"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 403 {object} models.ErrorResponse "Access denied - Manager only"
 // @Failure 409 {object} models.ErrorResponse "Book already exists"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /api/manager/books [post]
+// @Router /manager/books [post]
 func (h *ManagerHandler) CreateSach(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
-		})
-		return
-	}
+	// Role verification is already done by middleware, proceed with operation
 
 	var sach models.Sach
 	if err := c.ShouldBindJSON(&sach); err != nil {
@@ -76,14 +69,7 @@ func (h *ManagerHandler) CreateSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, models.SuccessResponse{
-		Success: true,
-		Message: "Book created successfully using 2-Phase Commit",
-		Data: gin.H{
-			"book":          sach,
-			"transactionID": transactionID,
-		},
-	})
+	c.JSON(http.StatusCreated, sach)
 }
 
 // GetSach handles GET /api/manager/books/{isbn}
@@ -94,21 +80,14 @@ func (h *ManagerHandler) CreateSach(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param isbn path string true "Book ISBN"
-// @Success 200 {object} models.SuccessResponse{data=models.Sach} "Book found"
+// @Success 200 {object} models.Sach "Book found"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 403 {object} models.ErrorResponse "Access denied - Manager only"
 // @Failure 404 {object} models.ErrorResponse "Book not found"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /api/manager/books/{isbn} [get]
+// @Router /manager/books/{isbn} [get]
 func (h *ManagerHandler) GetSach(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
-		})
-		return
-	}
+	// Role verification is already done by middleware, proceed with operation
 
 	isbn := c.Param("isbn")
 	if isbn == "" {
@@ -127,11 +106,7 @@ func (h *ManagerHandler) GetSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
-		Success: true,
-		Message: "Book found",
-		Data:    sach,
-	})
+	c.JSON(http.StatusOK, sach)
 }
 
 // SearchAvailableBooks handles GET /api/manager/books/search
@@ -142,21 +117,14 @@ func (h *ManagerHandler) GetSach(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param tenSach query string false "Book title search term"
-// @Success 200 {object} models.SuccessResponse{data=[]models.BookSearchResult} "Search results"
+// @Success 200 {object} []models.BookSearchResult "Search results"
 // @Failure 400 {object} models.ErrorResponse "Missing search parameters"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 403 {object} models.ErrorResponse "Access denied - Manager only"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /api/manager/books/search [get]
+// @Router /manager/books/search [get]
 func (h *ManagerHandler) SearchAvailableBooks(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
-		})
-		return
-	}
+	// Role verification is already done by middleware, proceed with operation
 
 	tenSach := c.Query("tenSach")
 	if tenSach == "" {
@@ -175,15 +143,7 @@ func (h *ManagerHandler) SearchAvailableBooks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
-		Success: true,
-		Message: "Book search completed",
-		Data: gin.H{
-			"searchTerm": tenSach,
-			"results":    results,
-			"count":      len(results),
-		},
-	})
+	c.JSON(http.StatusOK, results)
 }
 
 // GetSystemStats handles GET /api/manager/statistics
@@ -193,20 +153,13 @@ func (h *ManagerHandler) SearchAvailableBooks(c *gin.Context) {
 // @Tags Manager
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} models.SuccessResponse{data=models.SystemStats} "Statistics retrieved successfully"
+// @Success 200 {object} models.SystemStats "Statistics retrieved successfully"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 403 {object} models.ErrorResponse "Access denied - Manager only"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /api/manager/statistics [get]
+// @Router /manager/statistics [get]
 func (h *ManagerHandler) GetSystemStats(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
-		})
-		return
-	}
+	// Role verification is already done by middleware, proceed with operation
 
 	stats, err := h.borrowRepo.GetSystemStats()
 	if err != nil {
@@ -217,11 +170,7 @@ func (h *ManagerHandler) GetSystemStats(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
-		Success: true,
-		Message: "System statistics retrieved successfully",
-		Data:    stats,
-	})
+	c.JSON(http.StatusOK, stats)
 }
 
 // GetAllReaders handles GET /api/manager/readers
@@ -232,20 +181,13 @@ func (h *ManagerHandler) GetSystemStats(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param search query string false "Search term for reader name"
-// @Success 200 {object} models.SuccessResponse{data=[]models.DocGia} "Readers retrieved successfully"
+// @Success 200 {object} []models.DocGia "Readers retrieved successfully"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 403 {object} models.ErrorResponse "Access denied - Manager only"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /api/manager/readers [get]
+// @Router /manager/readers [get]
 func (h *ManagerHandler) GetAllReaders(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
-		})
-		return
-	}
+	// Role verification is already done by middleware, proceed with operation
 
 	searchTerm := c.Query("search")
 
@@ -266,13 +208,5 @@ func (h *ManagerHandler) GetAllReaders(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
-		Success: true,
-		Message: "System-wide readers retrieved successfully",
-		Data: gin.H{
-			"readers":    readers,
-			"count":      len(readers),
-			"searchTerm": searchTerm,
-		},
-	})
+	c.JSON(http.StatusOK, readers)
 }
