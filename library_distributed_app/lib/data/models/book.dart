@@ -4,16 +4,23 @@ part 'book.g.dart';
 
 @JsonSerializable()
 class BookModel {
+  @JsonKey(name: 'isbn')
   final String id;
+  @JsonKey(name: 'tenSach')
   final String title;
+  @JsonKey(name: 'tacGia')
   final String author;
-  final int quantity;
+  final int availableCount;
+  final int totalCount;
+  final int borrowedCount;
 
   const BookModel({
     this.id = '',
     this.title = '',
     this.author = '',
-    this.quantity = 0,
+    this.availableCount = 0,
+    this.totalCount = 0,
+    this.borrowedCount = 0,
   });
 
   factory BookModel.fromJson(Map<String, dynamic> json) =>
@@ -23,20 +30,24 @@ class BookModel {
 
   @override
   String toString() {
-    return '$runtimeType: {id: $id, title: $title, author: $author, quantity: $quantity}';
+    return '$runtimeType: {id: $id, title: $title, author: $author, availableCount: $availableCount, totalCount: $totalCount, borrowedCount: $borrowedCount}';
   }
 
   BookModel copyWith({
     String? id,
     String? title,
     String? author,
-    int? quantity,
+    int? availableCount,
+    int? totalCount,
+    int? borrowedCount,
   }) {
     return BookModel(
       id: id ?? this.id,
       title: title ?? this.title,
       author: author ?? this.author,
-      quantity: quantity ?? this.quantity,
+      availableCount: availableCount ?? this.availableCount,
+      totalCount: totalCount ?? this.totalCount,
+      borrowedCount: borrowedCount ?? this.borrowedCount,
     );
   }
 }

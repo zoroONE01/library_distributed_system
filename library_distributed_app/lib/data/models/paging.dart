@@ -8,7 +8,7 @@ class PagingModel {
   final int size;
   final int totalPages;
 
-  const PagingModel({this.page = 0, this.size = 0, this.totalPages = 0});
+  const PagingModel({this.page = 0, this.size = 5, this.totalPages = 0});
 
   factory PagingModel.fromJson(Map<String, dynamic> json) =>
       _$PagingModelFromJson(json);

@@ -21,7 +21,7 @@ class BookListEditor extends HookConsumerWidget {
       book.whenData((data) {
         bookNameController.text = data.title;
         authorController.text = data.author;
-        quantityController.text = data.quantity.toString();
+        quantityController.text = data.totalCount.toString();
       });
       return null;
     }, [book]);

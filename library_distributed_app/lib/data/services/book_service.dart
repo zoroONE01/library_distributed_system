@@ -6,12 +6,12 @@ part 'book_service.chopper.dart';
 
 @ChopperApi(baseUrl: '/books')
 abstract class BookService extends ChopperService {
-  @GET(path: '/')
+  @GET(path: '')
   Future<Response<BookListModel>> getBookList(
     @QueryMap() Map<String, dynamic> paging,
   );
 
-  @POST(path: '/')
+  @POST(path: '')
   Future<Response<BookModel>> addBook(@Body() BookModel book);
 
   @GET(path: '/{id}')

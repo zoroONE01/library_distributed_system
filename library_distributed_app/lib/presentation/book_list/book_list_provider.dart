@@ -12,15 +12,11 @@ part 'book_list_provider.g.dart';
 class BookList extends _$BookList {
   @override
   Future<BookListModel> build() async {
-    await fetchData(const PagingModel());
+    await fetchData();
     return state.value ?? const BookListModel();
   }
 
-  Future<void> refresh() async {
-    await fetchData(const PagingModel());
-  }
-
-  Future<void> fetchData(PagingModel paging) async {
+  Future<void> fetchData([PagingModel paging = const PagingModel()]) async {
     state = state.loadingWithPrevious();
     state = await AsyncValue.guard(() {
       return ref.read(bookRepositoryProvider).getBookList(paging);
@@ -33,10 +29,10 @@ class Book extends _$Book {
   @override
   Future<BookModel> build([String? id]) async {
     if (id == null) {
-      return const BookModel(quantity: 1);
+      return const BookModel();
     }
     await _fetchBook(id);
-    return state.value ?? const BookModel(quantity: 1);
+    return state.value ?? const BookModel();
   }
 
   Future<void> _fetchBook(String id) async {
@@ -57,7 +53,7 @@ class Book extends _$Book {
       state = AsyncValue.data(book.copyWith(id: id));
 
       // Refresh the book list after adding a new book
-      await ref.read(bookListProvider.notifier).refresh();
+      await ref.read(bookListProvider.notifier).fetchData();
 
       // Navigate back to the book list page
       if (ref.router.canPop()) ref.router.pop();

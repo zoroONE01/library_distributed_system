@@ -20,19 +20,28 @@ class BookListTable extends ConsumerWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
+        spacing: 10,
         children: [
           AppTable.build(
             context,
-            columnWidths: const [1, 5, 2, 1, 1],
-            titles: ['Mã sách', 'Tên sách', 'Tác giả', 'Số lượng', 'Hành động'],
+            columnWidths: const [1, 3, 5, 2, 1, 1],
+            titles: const [
+              '#',
+              'Mã sách',
+              'Tên sách',
+              'Tác giả',
+              'Số lượng',
+              'Hành động',
+            ],
             rows: items
                 .map(
                   (item) => _buildRow(
                     context,
+                    index: items.indexOf(item) + paging.page * paging.size,
                     id: item.id,
                     title: item.title,
                     author: item.author,
-                    quantity: item.quantity,
+                    quantity: item.totalCount,
                     onEdit: () {
                       const BookListEditor().showAsDialog(context);
                     },
@@ -59,9 +68,7 @@ class BookListTable extends ConsumerWidget {
                 .toList(),
           ),
           AppPaginationControls(
-            totalItems: paging.totalPages,
-            itemsPerPage: paging.size,
-            currentPage: paging.page,
+            paging,
             onPageChanged: (page) {
               ref
                   .read(bookListProvider.notifier)
@@ -75,6 +82,7 @@ class BookListTable extends ConsumerWidget {
 
   TableRow _buildRow(
     BuildContext context, {
+    int index = 0,
     String id = '001',
     String title =
         'Flutter for Beginners - A Comprehensive Guide to Mobile App Development',
@@ -85,6 +93,7 @@ class BookListTable extends ConsumerWidget {
   }) {
     return TableRow(
       children: [
+        AppTable.buildTextCell(context, text: (index + 1).toString()),
         AppTable.buildTextCell(context, text: id),
         AppTable.buildTextCell(context, text: title),
         AppTable.buildTextCell(context, text: author),

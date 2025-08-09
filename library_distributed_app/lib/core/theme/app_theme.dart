@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Light theme colors
@@ -177,6 +178,8 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         color: secondaryColor,
       ),
+    )..apply(
+      fontFamily: GoogleFonts.roboto().fontFamily,
     );
   }
 

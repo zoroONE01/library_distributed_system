@@ -78,7 +78,7 @@ class BookListPage extends ConsumerWidget {
                   AppButton(
                     label: 'Làm mới',
                     icon: const Icon(Icons.refresh_rounded, size: 20),
-                    onPressed: ref.read(bookListProvider.notifier).refresh,
+                    onPressed: ref.read(bookListProvider.notifier).fetchData,
                     shadowColor: Colors.transparent,
                     backgroundColor: context.onSurface.withValues(alpha: 0.2),
                   ),
