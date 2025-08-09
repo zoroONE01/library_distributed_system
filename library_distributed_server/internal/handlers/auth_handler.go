@@ -364,4 +364,3 @@ func GetClaims(c *gin.Context) (*auth.Claims, bool) {
 	userClaims, ok := claims.(*auth.Claims)
 	return userClaims, ok
 }
-
