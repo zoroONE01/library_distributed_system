@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:library_distributed_app/core/extensions/async_value_extension.dart';
+import 'package:library_distributed_app/core/extensions/context_extension.dart';
+import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
-import 'package:library_distributed_app/presentation/book_list/book_list_provider.dart';
-import 'package:library_distributed_app/presentation/book_list/widgets/book_list_editor.dart';
+import 'package:library_distributed_app/presentation/book_list/book_provider.dart';
+import 'package:library_distributed_app/presentation/book_list/widgets/book_list_editor_book_dialog.dart';
 import 'package:library_distributed_app/presentation/widgets/app_pagination_controls.dart';
 import 'package:library_distributed_app/presentation/widgets/app_table.dart';
 
@@ -43,25 +45,29 @@ class BookListTable extends ConsumerWidget {
                     author: item.author,
                     quantity: item.totalCount,
                     onEdit: () {
-                      const BookListEditor().showAsDialog(context);
+                      BookListEditor(bookId: item.id).showAsDialog(context);
                     },
                     onDelete: () {
-                      AlertDialog(
-                        title: const Text('Xác nhận xóa sách'),
-                        content: const Text(
-                          'Bạn có chắc chắn muốn xóa sách này?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text('Hủy', style: context.bodyLarge),
+                      context.showDialog((context) {
+                        return AlertDialog(
+                          title: const Text('Xác nhận xóa sách'),
+                          content: const Text(
+                            'Bạn có chắc chắn muốn xóa sách này?',
                           ),
-                          TextButton(
-                            onPressed: () {},
-                            child: Text('Xóa', style: context.bodyLarge),
-                          ),
-                        ],
-                      ).showAsDialog(context);
+                          actions: [
+                            TextButton(
+                              onPressed: context.maybePop,
+                              child: Text('Hủy', style: context.bodyLarge),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                ref.read(deleteBookProvider(item.id));
+                              },
+                              child: Text('Xóa', style: context.bodyLarge),
+                            ),
+                          ],
+                        );
+                      });
                     },
                   ),
                 )

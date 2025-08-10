@@ -5,8 +5,8 @@ import 'package:library_distributed_app/core/extensions/text_style_extension.dar
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/presentation/app/app_provider.dart';
-import 'package:library_distributed_app/presentation/book_list/book_list_provider.dart';
-import 'package:library_distributed_app/presentation/book_list/widgets/book_list_editor.dart';
+import 'package:library_distributed_app/presentation/book_list/book_provider.dart';
+import 'package:library_distributed_app/presentation/book_list/widgets/book_list_create_book_dialog.dart';
 import 'package:library_distributed_app/presentation/book_list/widgets/book_list_sort_dialog.dart';
 import 'package:library_distributed_app/presentation/book_list/widgets/book_list_table.dart';
 import 'package:library_distributed_app/presentation/widgets/app_button.dart';
@@ -46,7 +46,7 @@ class BookListPage extends ConsumerWidget {
                 label: 'Thêm sách mới',
                 icon: const Icon(Icons.add_rounded, size: 20),
                 onPressed: () {
-                  const BookListEditor().showAsDialog(context);
+                  const BookListCreateBookDialog().showAsDialog(context);
                 },
                 backgroundColor: context.primaryColor,
               ),

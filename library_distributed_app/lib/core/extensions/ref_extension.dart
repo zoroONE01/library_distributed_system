@@ -12,6 +12,5 @@ extension RefExtension on Ref {
     read(appLoadingProvider.notifier).stopLoading();
   }
 
-
   GoRouter get router => read(appRouterProvider);
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:library_distributed_app/core/extensions/context_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 
 extension WidgetExtension on Widget {
@@ -48,11 +49,6 @@ extension WidgetExtension on Widget {
   }
 
   Future<T?> showAsDialog<T>(BuildContext context) {
-    return showAdaptiveDialog<T>(
-      context: context,
-      barrierDismissible: true,
-      routeSettings: RouteSettings(name: 'dialog_$runtimeType'),
-      builder: (context) => this,
-    );
+    return context.showDialog((context) => this);
   }
 }

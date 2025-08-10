@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'book.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(includeIfNull: false)
 class BookModel {
   @JsonKey(name: 'isbn')
   final String id;
