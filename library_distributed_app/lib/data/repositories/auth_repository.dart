@@ -1,9 +1,9 @@
 import 'package:library_distributed_app/core/utils/logger.dart';
 import 'package:library_distributed_app/core/utils/secure_storage_manager.dart';
+import 'package:library_distributed_app/data/models/login_form.dart';
 import 'package:library_distributed_app/domain/entities/user_info.dart';
 import 'package:result_dart/result_dart.dart';
 
-import '../../domain/entities/login_form.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../services/auth_service.dart';
 
@@ -12,9 +12,14 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthService _service;
 
   @override
-  Future<Result<String>> login(LoginFormEntity entity) async {
+  Future<Result<String>> login({
+    required String username,
+    required String password,
+  }) async {
     try {
-      final response = await _service.login(entity);
+      final response = await _service.login(
+        LoginFormModel(username: username, password: password),
+      );
       logger.i('Login response: ${response.body}');
       if (response.isSuccessful) {
         final accessToken = response.body!.accessToken!;

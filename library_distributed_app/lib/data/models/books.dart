@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:library_distributed_app/data/models/book.dart';
 import 'package:library_distributed_app/data/models/paging.dart';
 
-part 'book_list.g.dart';
+part 'books.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class BooksModel {
@@ -12,8 +12,8 @@ class BooksModel {
   const BooksModel({this.items = const [], this.paging = const PagingModel()});
 
   factory BooksModel.fromJson(Map<String, dynamic> json) =>
-      _$BookListModelFromJson(json);
-  Map<String, dynamic> toJson() => _$BookListModelToJson(this);
+      _$BooksModelFromJson(json);
+  Map<String, dynamic> toJson() => _$BooksModelToJson(this);
 
   @override
   String toString() {

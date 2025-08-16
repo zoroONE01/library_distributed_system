@@ -7,7 +7,6 @@ import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/toast_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/core/utils/validator.dart';
-import 'package:library_distributed_app/domain/entities/login_form.dart';
 import 'package:library_distributed_app/presentation/app/app_provider.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
 import 'package:library_distributed_app/presentation/widgets/app_button.dart';
@@ -127,10 +126,8 @@ class LoginForm extends HookConsumerWidget {
               ref
                   .read(authProvider.notifier)
                   .login(
-                    LoginFormEntity(
-                      username: usernameController.text,
-                      password: passwordController.text,
-                    ),
+                    username: usernameController.text,
+                    password: passwordController.text,
                   );
             },
           ),

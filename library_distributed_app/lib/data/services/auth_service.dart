@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:chopper/chopper.dart';
 import 'package:library_distributed_app/data/models/auth_info.dart';
+import 'package:library_distributed_app/data/models/login_form.dart';
 
-import '../../domain/entities/login_form.dart';
 import '../models/user_info.dart';
 
 part 'auth_service.chopper.dart';
@@ -11,7 +11,7 @@ part 'auth_service.chopper.dart';
 @ChopperApi(baseUrl: '/auth')
 abstract class AuthService extends ChopperService {
   @POST(path: '/login')
-  Future<Response<AuthInfoModel>> login(@Body() LoginFormEntity loginForm);
+  Future<Response<AuthInfoModel>> login(@Body() LoginFormModel loginForm);
 
   @POST(path: '/logout')
   Future<Response<void>> logout();

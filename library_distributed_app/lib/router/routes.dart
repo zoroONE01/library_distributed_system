@@ -12,8 +12,8 @@ part of 'router.dart';
       ],
     ),
     TypedStatefulShellBranch<StatefulShellBranchData>(
-      routes: <TypedGoRoute<BooksRoute>>[
-        TypedGoRoute<BooksRoute>(path: '/book-copies'),
+      routes: <TypedGoRoute<BookCopiesRoute>>[
+        TypedGoRoute<BookCopiesRoute>(path: '/book-copies'),
       ],
     ),
     TypedStatefulShellBranch<StatefulShellBranchData>(

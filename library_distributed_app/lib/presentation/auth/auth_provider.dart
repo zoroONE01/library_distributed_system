@@ -3,7 +3,6 @@ import 'package:library_distributed_app/core/extensions/ref_extension.dart';
 import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/string_extension.dart';
 import 'package:library_distributed_app/core/utils/secure_storage_manager.dart';
-import 'package:library_distributed_app/domain/entities/login_form.dart';
 import 'package:library_distributed_app/domain/entities/user_info.dart';
 import 'package:library_distributed_app/domain/repositories/auth_repository.dart';
 import 'package:library_distributed_app/domain/usecases/auth_usecase.dart';
@@ -20,10 +19,10 @@ class Auth extends _$Auth {
     return !accessToken.isNullOrEmpty;
   }
 
-  void login(LoginFormEntity entity) {
+  void login({required String username, required String password}) {
     ref.startLoading();
     AuthLoginUseCase(authRepository: ref.read(authRepositoryProvider))
-        .call(entity)
+        .call((username: username, password: password))
         .then(
           (value) => value.fold(
             (success) {

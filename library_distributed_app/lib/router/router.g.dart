@@ -39,7 +39,7 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
         GoRouteData.$route(
           path: '/book-copies',
 
-          factory: $BooksRouteExtension._fromState,
+          factory: $BookCopiesRouteExtension._fromState,
         ),
       ],
     ),
@@ -96,6 +96,22 @@ extension $BooksRouteExtension on BooksRoute {
   static BooksRoute _fromState(GoRouterState state) => const BooksRoute();
 
   String get location => GoRouteData.$location('/books');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $BookCopiesRouteExtension on BookCopiesRoute {
+  static BookCopiesRoute _fromState(GoRouterState state) =>
+      const BookCopiesRoute();
+
+  String get location => GoRouteData.$location('/book-copies');
 
   void go(BuildContext context) => context.go(location);
 
@@ -167,22 +183,6 @@ RouteBase get $bookCopiesRoute => GoRouteData.$route(
 
   factory: $BookCopiesRouteExtension._fromState,
 );
-
-extension $BookCopiesRouteExtension on BookCopiesRoute {
-  static BookCopiesRoute _fromState(GoRouterState state) =>
-      const BookCopiesRoute();
-
-  String get location => GoRouteData.$location('/book-copies');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
 
 RouteBase get $readerListRoute => GoRouteData.$route(
   path: '/readers',
