@@ -12,11 +12,15 @@ class AppLoading extends _$AppLoading {
   }
 
   void startLoading() {
-    state = true;
+    if (!state) {
+      state = true;
+    }
   }
 
   void stopLoading() {
-    state = false;
+    if (state) {
+      state = false;
+    }
   }
 }
 

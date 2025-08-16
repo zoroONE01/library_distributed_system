@@ -1,80 +1,35 @@
-import 'package:library_distributed_app/data/models/book.dart';
-import 'package:library_distributed_app/data/models/book_list.dart';
-import 'package:library_distributed_app/data/models/paging.dart';
-import 'package:library_distributed_app/data/services/book_service.dart';
+import 'package:library_distributed_app/data/services/books_service.dart';
+import 'package:library_distributed_app/domain/entities/book.dart';
+import 'package:library_distributed_app/domain/entities/paging.dart';
 import 'package:library_distributed_app/domain/repositories/book_repository.dart';
+import 'package:result_dart/result_dart.dart';
 
 class BookRepositoryImpl implements BookRepository {
-  const BookRepositoryImpl(this._service);
-  final BookService _service;
+  const BookRepositoryImpl(BooksService service) : _service = service;
+
+  final BooksService _service;
 
   @override
-  Future<String> addBook(BookModel book) async {
-    try {
-      final response = await _service.addBook(book);
-      if (response.isSuccessful && response.body != null) {
-        return response.body!.id;
-      } else {
-        throw Exception('Failed to add book');
-      }
-    } catch (e) {
-      rethrow;
-    }
+  Future<Result<String>> addBook(BookEntity book) {
+    // TODO: implement addBook
+    throw UnimplementedError();
   }
 
   @override
-  Future<String> deleteBook(String id) async {
-    try {
-      final response = await _service.deleteBook(id);
-      if (response.isSuccessful) {
-        return id;
-      } else {
-        throw Exception('Failed to delete book');
-      }
-    } catch (e) {
-      rethrow;
-    }
+  Future<Result<String>> deleteBook(String id) {
+    // TODO: implement deleteBook
+    throw UnimplementedError();
   }
 
   @override
-  Future<BookModel> getBookById(String id) async {
-    try {
-      final response = await _service.getBook(id);
-      if (response.isSuccessful && response.body != null) {
-        return response.body!;
-      } else {
-        throw Exception('Failed to get book');
-      }
-    } catch (e) {
-      rethrow;
-    }
+  Future<Result<BooksEntity>> getBookList(PagingEntity paging) {
+    // TODO: implement getBookList
+    throw UnimplementedError();
   }
 
   @override
-  Future<BookListModel> getBookList(PagingModel paging) async {
-    try {
-      final response = await _service.getBookList(paging.toJson());
-      if (response.isSuccessful && response.body != null) {
-        return response.body!;
-      } else {
-        throw Exception('Failed to get book list');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<String> updateBook(BookModel book) async {
-    try {
-      final response = await _service.updateBook(book.id, book);
-      if (response.isSuccessful && response.body != null) {
-        return response.body!.id;
-      } else {
-        throw Exception('Failed to update book');
-      }
-    } catch (e) {
-      rethrow;
-    }
+  Future<Result<String>> updateBook(BookEntity book) {
+    // TODO: implement updateBook
+    throw UnimplementedError();
   }
 }

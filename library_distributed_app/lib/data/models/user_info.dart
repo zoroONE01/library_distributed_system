@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:library_distributed_app/core/constants/enums.dart';
+import 'package:library_distributed_app/domain/entities/user_info.dart';
 
 part 'user_info.g.dart';
 
@@ -27,5 +28,9 @@ class UserInfoModel {
   @override
   String toString() {
     return '$runtimeType: {id: $id, username: $username, role: $role, site: ${site.name}';
+  }
+
+  UserInfoEntity toEntity() {
+    return UserInfoEntity(id: id, username: username, role: role);
   }
 }

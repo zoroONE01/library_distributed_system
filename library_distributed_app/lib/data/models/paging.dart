@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:library_distributed_app/domain/entities/paging.dart';
 
 part 'paging.g.dart';
 
@@ -13,6 +14,14 @@ class PagingModel {
   factory PagingModel.fromJson(Map<String, dynamic> json) =>
       _$PagingModelFromJson(json);
 
+  factory PagingModel.fromEntity(PagingEntity entity) {
+    return PagingModel(
+      page: entity.currentPage,
+      size: entity.pageSize,
+      totalPages: entity.totalPages,
+    );
+  }
+
   Map<String, dynamic> toJson() => _$PagingModelToJson(this);
 
   @override
@@ -20,14 +29,11 @@ class PagingModel {
     return '$runtimeType: {page: $page, size: $size, totalPages: $totalPages}';
   }
 
-  bool get isFirstPage => page == 0;
-  bool get isLastPage => page == totalPages - 1;
-
-  PagingModel copyWith({int? page, int? size, int? totalPages}) {
-    return PagingModel(
-      page: page ?? this.page,
-      size: size ?? this.size,
-      totalPages: totalPages ?? this.totalPages,
+  PagingEntity toEntity() {
+    return PagingEntity(
+      currentPage: page,
+      pageSize: size,
+      totalPages: totalPages,
     );
   }
 }

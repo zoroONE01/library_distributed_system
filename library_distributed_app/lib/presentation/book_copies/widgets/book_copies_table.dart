@@ -4,25 +4,22 @@ import 'package:library_distributed_app/core/extensions/async_value_extension.da
 import 'package:library_distributed_app/core/extensions/context_extension.dart';
 import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
-import 'package:library_distributed_app/core/extensions/widget_extension.dart';
-import 'package:library_distributed_app/presentation/book_list/book_provider.dart';
-import 'package:library_distributed_app/presentation/book_list/widgets/book_list_editor_book_dialog.dart';
+import 'package:library_distributed_app/presentation/book_copies/providers/book_copies_provider.dart';
+import 'package:library_distributed_app/presentation/books/providers/books_provider.dart';
 import 'package:library_distributed_app/presentation/widgets/app_pagination_controls.dart';
 import 'package:library_distributed_app/presentation/widgets/app_table.dart';
 
-class BookListTable extends ConsumerWidget {
-  const BookListTable({super.key});
+class BookCopiesTable extends ConsumerWidget {
+  const BookCopiesTable({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(bookListProvider).whenDataOrPreviousWidget((data) {
+    return ref.watch(bookCopiesProvider).whenDataOrPreviousWidget((data) {
       final items = data.items;
       final paging = data.paging;
-
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
-        spacing: 10,
         children: [
           AppTable.build(
             context,
@@ -39,14 +36,14 @@ class BookListTable extends ConsumerWidget {
                 .map(
                   (item) => _buildRow(
                     context,
-                    index: items.indexOf(item) + paging.page * paging.size,
-                    id: item.id,
+                    index:
+                        items.indexOf(item) +
+                        paging.currentPage * paging.pageSize,
+                    id: item.isbn,
                     title: item.title,
                     author: item.author,
                     quantity: item.totalCount,
-                    onEdit: () {
-                      BookListEditor(bookId: item.id).showAsDialog(context);
-                    },
+                    onEdit: () {},
                     onDelete: () {
                       context.showDialog((context) {
                         return AlertDialog(
@@ -61,7 +58,7 @@ class BookListTable extends ConsumerWidget {
                             ),
                             TextButton(
                               onPressed: () {
-                                ref.read(deleteBookProvider(item.id));
+                                ref.read(deleteBookProvider(item.isbn));
                               },
                               child: Text('Xóa', style: context.bodyLarge),
                             ),
@@ -73,13 +70,10 @@ class BookListTable extends ConsumerWidget {
                 )
                 .toList(),
           ),
+          const SizedBox(height: 10),
           AppPaginationControls(
             paging,
-            onPageChanged: (page) {
-              ref
-                  .read(bookListProvider.notifier)
-                  .fetchData(paging.copyWith(page: page));
-            },
+            onPageChanged: ref.read(bookCopiesProvider.notifier).fetchData,
           ),
         ],
       );

@@ -32,26 +32,25 @@ class HomePage extends ConsumerWidget {
               margin: EdgeInsets.zero,
               child: Consumer(
                 builder: (context, ref, child) {
-                  final userInfo = ref.watch(
-                    authProvider.notifier.select((value) => value.userInfo),
-                  );
+                  final userInfo = ref.watch(getUserInfoProvider);
+                  final branch = ref.watch(librarySiteProvider);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Thư viện ${userInfo?.site.text}',
+                        'Thư viện ${branch.text}',
                         style: context.headlineMedium.copyWith(
                           color: context.onPrimary,
                         ),
                       ),
                       Text(
-                        'Thủ thư: ${userInfo?.username}',
+                        'Thủ thư: ${userInfo.value?.username}',
                         style: context.bodyLarge.copyWith(
                           color: context.onPrimary,
                         ),
                       ),
                       Text(
-                        'Vai trò: ${userInfo?.role.text}',
+                        'Vai trò: ${userInfo.value?.role.text}',
                         style: context.bodyLarge.copyWith(
                           color: context.onPrimary,
                         ),
@@ -211,21 +210,17 @@ class HomePage extends ConsumerWidget {
                           ),
                           child: Consumer(
                             builder: (context, ref, child) {
-                              final userInfo = ref.watch(
-                                authProvider.notifier.select(
-                                  (value) => value.userInfo,
-                                ),
-                              );
+                              final state = ref.watch(getUserInfoProvider);
                               return Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    'Thủ thư: ${userInfo?.username}',
+                                    'Thủ thư: ${state.value?.username}',
                                     style: context.bodyMedium.bold,
                                   ),
                                   Text(
-                                    'Vai trò: ${userInfo?.role.text}',
+                                    'Vai trò: ${state.value?.role.text}',
                                     style: context.bodyMedium,
                                   ),
                                 ],

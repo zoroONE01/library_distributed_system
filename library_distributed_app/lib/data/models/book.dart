@@ -4,8 +4,7 @@ part 'book.g.dart';
 
 @JsonSerializable(includeIfNull: false)
 class BookModel {
-  @JsonKey(name: 'isbn')
-  final String id;
+  final String isbn;
   @JsonKey(name: 'tenSach')
   final String title;
   @JsonKey(name: 'tacGia')
@@ -15,7 +14,7 @@ class BookModel {
   final int borrowedCount;
 
   const BookModel({
-    this.id = '',
+    this.isbn = '',
     this.title = '',
     this.author = '',
     this.availableCount = 0,
@@ -30,24 +29,6 @@ class BookModel {
 
   @override
   String toString() {
-    return '$runtimeType: {id: $id, title: $title, author: $author, availableCount: $availableCount, totalCount: $totalCount, borrowedCount: $borrowedCount}';
-  }
-
-  BookModel copyWith({
-    String? id,
-    String? title,
-    String? author,
-    int? availableCount,
-    int? totalCount,
-    int? borrowedCount,
-  }) {
-    return BookModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      author: author ?? this.author,
-      availableCount: availableCount ?? this.availableCount,
-      totalCount: totalCount ?? this.totalCount,
-      borrowedCount: borrowedCount ?? this.borrowedCount,
-    );
+    return '$runtimeType: {isbn: $isbn, title: $title, author: $author, availableCount: $availableCount, totalCount: $totalCount, borrowedCount: $borrowedCount}';
   }
 }

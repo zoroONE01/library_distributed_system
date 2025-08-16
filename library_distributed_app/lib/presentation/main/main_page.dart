@@ -26,8 +26,13 @@ class MainPage extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 8),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.bookmark),
+                label: Text('Đầu sách'),
+                padding: EdgeInsets.symmetric(vertical: 8),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.book),
-                label: Text('Sách'),
+                label: Text('Quyển sách'),
                 padding: EdgeInsets.symmetric(vertical: 8),
               ),
               NavigationRailDestination(

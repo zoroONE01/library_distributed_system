@@ -1,0 +1,3 @@
+class BookFormEntity {
+  const BookFormEntity();
+}

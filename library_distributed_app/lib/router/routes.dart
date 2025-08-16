@@ -7,8 +7,13 @@ part of 'router.dart';
       routes: <TypedGoRoute<HomeRoute>>[TypedGoRoute<HomeRoute>(path: '/')],
     ),
     TypedStatefulShellBranch<StatefulShellBranchData>(
-      routes: <TypedGoRoute<BookListRoute>>[
-        TypedGoRoute<BookListRoute>(path: '/books'),
+      routes: <TypedGoRoute<BooksRoute>>[
+        TypedGoRoute<BooksRoute>(path: '/books'),
+      ],
+    ),
+    TypedStatefulShellBranch<StatefulShellBranchData>(
+      routes: <TypedGoRoute<BooksRoute>>[
+        TypedGoRoute<BooksRoute>(path: '/book-copies'),
       ],
     ),
     TypedStatefulShellBranch<StatefulShellBranchData>(
@@ -48,12 +53,19 @@ class HomeRoute extends GoRouteData {
   Widget build(BuildContext context, GoRouterState state) => const HomePage();
 }
 
-@TypedGoRoute<BookListRoute>(path: '/books')
-class BookListRoute extends GoRouteData {
-  const BookListRoute();
+@TypedGoRoute<BooksRoute>(path: '/books')
+class BooksRoute extends GoRouteData {
+  const BooksRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const BooksPage();
+}
+
+@TypedGoRoute<BookCopiesRoute>(path: '/book-copies')
+class BookCopiesRoute extends GoRouteData {
+  const BookCopiesRoute();
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const BookListPage();
+      const BookCopiesPage();
 }
 
 @TypedGoRoute<ReaderListRoute>(path: '/readers')

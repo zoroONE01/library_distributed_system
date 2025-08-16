@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:library_distributed_app/data/models/paging.dart';
+import 'package:library_distributed_app/domain/entities/paging.dart';
 
 class AppPaginationControls extends StatelessWidget {
   const AppPaginationControls(
@@ -8,7 +8,7 @@ class AppPaginationControls extends StatelessWidget {
     required this.onPageChanged,
   });
 
-  final PagingModel data;
+  final PagingEntity data;
   final ValueChanged<int> onPageChanged;
 
   @override
@@ -16,17 +16,17 @@ class AppPaginationControls extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Trang ${data.page + 1} trong ${data.totalPages}'),
+        Text('Trang ${data.currentPage} trong ${data.totalPages}'),
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded),
           onPressed: !data.isFirstPage
-              ? () => onPageChanged(data.page - 1)
+              ? () => onPageChanged(data.currentPage - 1)
               : null,
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right_rounded),
-          onPressed: !data.isLastPage
-              ? () => onPageChanged(data.page + 1)
+          onPressed: data.hasNextPage
+              ? () => onPageChanged(data.currentPage + 1)
               : null,
         ),
       ],

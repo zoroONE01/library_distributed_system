@@ -1,81 +1,73 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:library_distributed_app/core/extensions/ref_extension.dart';
 import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/string_extension.dart';
 import 'package:library_distributed_app/core/utils/secure_storage_manager.dart';
-import 'package:library_distributed_app/data/models/user_info.dart';
 import 'package:library_distributed_app/domain/entities/login_form.dart';
+import 'package:library_distributed_app/domain/entities/user_info.dart';
 import 'package:library_distributed_app/domain/repositories/auth_repository.dart';
+import 'package:library_distributed_app/domain/usecases/auth_usecase.dart';
+import 'package:result_dart/result_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 class Auth extends _$Auth {
-  UserInfoModel? userInfo;
-
   @override
   Future<bool> build() async {
     final accessToken = await secureStorage.readAccessToken();
-    final isLoggedIn = accessToken?.isNotEmpty ?? false;
-    if (isLoggedIn) {
-      await getProfile();
-    }
-    return isLoggedIn;
+    return !accessToken.isNullOrEmpty;
   }
 
-  Future<void> login(LoginFormEntity entity) async {
-    try {
-      ref.startLoading();
-
-      final result = await ref.read(authRepositoryProvider).login(entity);
-
-      if (result.accessToken.isNullOrEmpty) {
-        throw Exception('Login failed: Result is null');
-      }
-
-      await secureStorage.writeAccessToken(result.accessToken!);
-
-      await _getProfile();
-
-      state = const AsyncValue.data(true);
-
-      ref.router.replaceAll('/');
-    } catch (e, stackTrace) {
-      userInfo = null;
-      secureStorage.deleteAll();
-      state = AsyncValue.error(e, stackTrace);
-    } finally {
-      ref.stopLoading();
-    }
+  void login(LoginFormEntity entity) {
+    ref.startLoading();
+    AuthLoginUseCase(authRepository: ref.read(authRepositoryProvider))
+        .call(entity)
+        .then(
+          (value) => value.fold(
+            (success) {
+              state = const AsyncValue.data(true);
+              ref.router.replaceAll('/');
+            },
+            (error) {
+              secureStorage.deleteAll();
+              state = AsyncValue.error(error, StackTrace.current);
+            },
+          ),
+        )
+        .whenComplete(ref.stopLoading);
   }
 
-  Future<void> _getProfile() async {
-    userInfo = await ref.read(authRepositoryProvider).getProfile();
+  void logout() {
+    ref.startLoading();
+    AuthLogoutUseCase(authRepository: ref.read(authRepositoryProvider))
+        .call()
+        .then(
+          (value) => value.fold(
+            (success) {
+              secureStorage.deleteAll();
+              state = const AsyncValue.data(false);
+              ref.invalidate(getUserInfoProvider);
+              ref.router.replaceAll('/login');
+            },
+            (error) {
+              state = AsyncValue.error(error, StackTrace.current);
+            },
+          ),
+        )
+        .whenComplete(ref.stopLoading);
   }
+}
 
-  Future<void> getProfile() async {
-    try {
-      ref.startLoading();
-      await _getProfile();
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
-    } finally {
-      ref.stopLoading();
-    }
-  }
-
-  Future<void> logout() async {
-    try {
-      ref.startLoading();
-      await ref.read(authRepositoryProvider).logout();
-      userInfo = null;
-      secureStorage.deleteAll();
-      state = const AsyncValue.data(false);
-      ref.router.replaceAll('/login');
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
-    } finally {
-      ref.stopLoading();
-    }
-  }
+@riverpod
+Future<UserInfoEntity> getUserInfo(Ref ref) async {
+  final userInfo =
+      await AuthGetProfileUseCase(
+        authRepository: ref.read(authRepositoryProvider),
+      ).call().fold((success) => success, (error) {
+        throw Exception(error);
+      });
+  ref.keepAlive();
+  return userInfo;
 }

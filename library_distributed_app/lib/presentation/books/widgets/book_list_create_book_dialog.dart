@@ -4,12 +4,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/toast_extension.dart';
-import 'package:library_distributed_app/presentation/book_list/book_provider.dart';
+import 'package:library_distributed_app/domain/entities/book.dart';
+import 'package:library_distributed_app/presentation/books/providers/books_provider.dart';
 import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
 
-class BookListEditor extends HookConsumerWidget {
-  const BookListEditor({super.key, required this.bookId});
-  final String bookId;
+class BookListCreateBookDialog extends HookConsumerWidget {
+  const BookListCreateBookDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,45 +17,40 @@ class BookListEditor extends HookConsumerWidget {
     final authorController = useTextEditingController();
     final quantityController = useTextEditingController();
 
-    final book = ref.watch(editBookProvider(bookId));
-
-    final isFirstUpdate = useRef(true);
-
-    ref.listen(editBookProvider(bookId), (previous, next) {
-      next.whenOrNull(
-        data: (_) {
-          if (previous == null || previous.isLoading) return;
-          if (isFirstUpdate.value) {
-            isFirstUpdate.value = false;
-            return;
-          }
-          context.showSuccess('Cập nhật sách thành công');
+    final onPerformCreate = useCallback(
+      () => ref.listenManual(
+        createBookProvider(
+          BookEntity(
+            title: bookNameController.text,
+            author: authorController.text,
+          ),
+        ),
+        (previous, next) {
+          next.whenOrNull(
+            data: (_) {
+              if (previous == null) return;
+              if (previous.hasValue) {
+                context.showSuccess('Thêm sách thành công');
+              }
+            },
+            error: (error, stackTrace) {
+              context.showError('Thêm sách thất bại: ${error.toString()}');
+            },
+          );
         },
-        error: (error, stackTrace) {
-          context.showError('Cập nhật sách thất bại: ${error.toString()}');
-        },
-      );
-    });
-
-    useEffect(() {
-      book.whenData((data) {
-        bookNameController.text = data.title;
-        authorController.text = data.author;
-        quantityController.text = data.totalCount.toString();
-      });
-      return;
-    }, [book]);
+      ),
+      [bookNameController.text, authorController.text, quantityController.text],
+    );
 
     return AlertDialog(
-      title: Text('Cập nhật sách #$bookId', style: context.headlineMedium),
+      title: Text('Thêm sách mới', style: context.headlineMedium),
       actions: [
         TextButton(
           onPressed: context.maybePop,
           child: Text('Hủy', style: context.bodyLarge),
         ),
         TextButton(
-          onPressed: () =>
-              ref.read(editBookProvider(bookId).notifier).performUpdate(),
+          onPressed: onPerformCreate,
           child: Text('Thêm', style: context.bodyLarge),
         ),
       ],

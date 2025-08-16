@@ -9,7 +9,8 @@ part of 'router.dart';
 List<RouteBase> get $appRoutes => [
   $appShellRoute,
   $homeRoute,
-  $bookListRoute,
+  $booksRoute,
+  $bookCopiesRoute,
   $readerListRoute,
   $borrowRoute,
   $branchesRoute,
@@ -29,7 +30,16 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
         GoRouteData.$route(
           path: '/books',
 
-          factory: $BookListRouteExtension._fromState,
+          factory: $BooksRouteExtension._fromState,
+        ),
+      ],
+    ),
+    StatefulShellBranchData.$branch(
+      routes: [
+        GoRouteData.$route(
+          path: '/book-copies',
+
+          factory: $BooksRouteExtension._fromState,
         ),
       ],
     ),
@@ -82,8 +92,8 @@ extension $HomeRouteExtension on HomeRoute {
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $BookListRouteExtension on BookListRoute {
-  static BookListRoute _fromState(GoRouterState state) => const BookListRoute();
+extension $BooksRouteExtension on BooksRoute {
+  static BooksRoute _fromState(GoRouterState state) => const BooksRoute();
 
   String get location => GoRouteData.$location('/books');
 
@@ -146,11 +156,33 @@ extension $BranchesRouteExtension on BranchesRoute {
 RouteBase get $homeRoute =>
     GoRouteData.$route(path: '/', factory: $HomeRouteExtension._fromState);
 
-RouteBase get $bookListRoute => GoRouteData.$route(
+RouteBase get $booksRoute => GoRouteData.$route(
   path: '/books',
 
-  factory: $BookListRouteExtension._fromState,
+  factory: $BooksRouteExtension._fromState,
 );
+
+RouteBase get $bookCopiesRoute => GoRouteData.$route(
+  path: '/book-copies',
+
+  factory: $BookCopiesRouteExtension._fromState,
+);
+
+extension $BookCopiesRouteExtension on BookCopiesRoute {
+  static BookCopiesRoute _fromState(GoRouterState state) =>
+      const BookCopiesRoute();
+
+  String get location => GoRouteData.$location('/book-copies');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
 
 RouteBase get $readerListRoute => GoRouteData.$route(
   path: '/readers',
