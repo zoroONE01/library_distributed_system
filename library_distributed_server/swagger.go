@@ -49,6 +49,6 @@
 //	description: "Type 'Bearer {token}' to correctly set the API Key"
 //
 // swagger:meta
-package main
+package docs
 
 //go:generate swag init -g cmd/site-q1/main.go -o docs

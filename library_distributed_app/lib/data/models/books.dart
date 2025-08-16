@@ -19,4 +19,11 @@ class BooksModel {
   String toString() {
     return '$runtimeType: {data: $items, paging: $paging}';
   }
+
+  // BookCopiesEntity toEntity() {
+  //   return BookCopiesEntity(
+  //     items: items.map((item) => item.toEntity()).toList(),
+  //     paging: paging.toEntity(),
+  //   );
+  // }
 }

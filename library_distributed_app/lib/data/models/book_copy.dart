@@ -4,13 +4,9 @@ part 'book_copy.g.dart';
 
 @JsonSerializable(includeIfNull: false)
 class BookCopyModel {
-  final String isbn;
   @JsonKey(name: 'maQuyenSach')
-  final String id;
-  @JsonKey(name: 'tenSach')
-  final String title;
-  @JsonKey(name: 'tacGia')
-  final String author;
+  final String bookCopyId;
+  final String isbn;
   @JsonKey(name: 'maCN')
   final String branchId;
   @JsonKey(name: 'tenCN')
@@ -19,10 +15,8 @@ class BookCopyModel {
   final String status;
 
   const BookCopyModel({
+    required this.bookCopyId,
     required this.isbn,
-    required this.id,
-    required this.title,
-    required this.author,
     required this.branchId,
     required this.branchName,
     required this.status,
@@ -35,6 +29,6 @@ class BookCopyModel {
 
   @override
   String toString() {
-    return '$runtimeType: {id: $id, title: $title, author: $author, branchId: $branchId, branchName: $branchName, status: $status}';
+    return '$runtimeType: {bookCopyId: $bookCopyId, isbn: $isbn, branchId: $branchId, branchName: $branchName, status: $status}';
   }
 }

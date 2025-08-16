@@ -73,7 +73,7 @@ func (h *BookHandler) GetBooks(c *gin.Context) {
 // Returns book copies based on user role with pagination - THUTHU sees local site, QUANLY sees all sites
 // @Summary Get book copies based on user role with pagination
 // @Description Get book copies with pagination - THUTHU sees local site only, QUANLY sees system-wide
-// @Tags Books
+// @Tags Book Copies
 // @Produce json
 // @Security BearerAuth
 // @Param page query int false "Page number (0-based)" default(0)
@@ -332,7 +332,7 @@ func (h *BookHandler) CreateQuyenSach(c *gin.Context) {
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /site/{siteID}/book-copies/{maQuyenSach} [get]
+// @Router /book-copies/{maQuyenSach} [get]
 func (h *BookHandler) GetQuyenSach(c *gin.Context) {
 	maQuyenSach := c.Param("maQuyenSach")
 	if maQuyenSach == "" {
@@ -370,7 +370,7 @@ func (h *BookHandler) GetQuyenSach(c *gin.Context) {
 // @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /site/{siteID}/book-copies/{maQuyenSach} [put]
+// @Router /book-copies/{maQuyenSach} [put]
 func (h *BookHandler) UpdateQuyenSach(c *gin.Context) {
 	maQuyenSach := c.Param("maQuyenSach")
 	if maQuyenSach == "" {
@@ -419,7 +419,7 @@ func (h *BookHandler) UpdateQuyenSach(c *gin.Context) {
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
 // @Failure 409 {object} models.ErrorResponse "Cannot delete book copy currently on loan"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /site/{siteID}/book-copies/{maQuyenSach} [delete]
+// @Router /book-copies/{maQuyenSach} [delete]
 func (h *BookHandler) DeleteQuyenSach(c *gin.Context) {
 	maQuyenSach := c.Param("maQuyenSach")
 	if maQuyenSach == "" {

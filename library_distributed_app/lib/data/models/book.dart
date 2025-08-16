@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:library_distributed_app/domain/entities/book.dart';
 
 part 'book.g.dart';
 
@@ -30,5 +31,9 @@ class BookModel {
   @override
   String toString() {
     return '$runtimeType: {isbn: $isbn, title: $title, author: $author, availableCount: $availableCount, totalCount: $totalCount, borrowedCount: $borrowedCount}';
+  }
+
+  BookEntity toEntity() {
+    return BookEntity(isbn: isbn, title: title, author: author);
   }
 }

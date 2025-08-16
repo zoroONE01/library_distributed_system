@@ -12,13 +12,12 @@ help: ## Show this help message
 
 swagger: ## Generate Swagger documentation for all services
 	@echo "Generating Swagger documentation for all services..."
-	@export PATH=$$PATH:$(HOME)/go/bin && \
-	mkdir -p docs/site-q1 && \
-	swag init -g cmd/site-q1/main.go -o docs/site-q1 && \
+	@mkdir -p docs/site-q1 && \
+	$(HOME)/go/bin/swag init -g cmd/site-q1/main.go -o docs/site-q1 && \
 	mkdir -p docs/site-q3 && \
-	swag init -g cmd/site-q3/main.go -o docs/site-q3 && \
+	$(HOME)/go/bin/swag init -g cmd/site-q3/main.go -o docs/site-q3 && \
 	mkdir -p docs/coordinator && \
-	swag init -g cmd/coordinator/main.go -o docs/coordinator
+	$(HOME)/go/bin/swag init -g cmd/coordinator/main.go -o docs/coordinator
 	@echo "Swagger documentation generated for all services"
 	@echo "- Site Q1 Swagger: http://localhost:8081/swagger/index.html"
 	@echo "- Site Q3 Swagger: http://localhost:8083/swagger/index.html"

@@ -161,7 +161,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Books"
+                    "Book Copies"
                 ],
                 "summary": "Get book copies based on user role with pagination",
                 "parameters": [
@@ -262,6 +262,191 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Book copy already exists",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/book-copies/{maQuyenSach}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get book copy information by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Get book copy by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book copy found",
+                        "schema": {
+                            "$ref": "#/definitions/models.QuyenSach"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update book copy information (ThuThu only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Update book copy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated book copy information",
+                        "name": "bookCopy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.QuyenSach"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book copy updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a book copy (ThuThu only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Copies"
+                ],
+                "summary": "Delete book copy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book copy ID",
+                        "name": "maQuyenSach",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Book copy deleted successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied - ThuThu only",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Book copy not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete book copy currently on loan",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -1013,49 +1198,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/manager/stats": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get comprehensive statistics across all sites in the distributed system (Manager only)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Statistics"
-                ],
-                "summary": "Get system statistics",
-                "responses": {
-                    "200": {
-                        "description": "System statistics retrieved successfully",
-                        "schema": {
-                            "$ref": "#/definitions/models.SystemStats"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Manager role required",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve system statistics",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/readers": {
             "get": {
                 "security": [
@@ -1360,191 +1502,6 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Cannot delete reader with active borrows",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/site/{siteID}/book-copies/{maQuyenSach}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get book copy information by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Copies"
-                ],
-                "summary": "Get book copy by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Book copy ID",
-                        "name": "maQuyenSach",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Book copy found",
-                        "schema": {
-                            "$ref": "#/definitions/models.QuyenSach"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book copy not found",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update book copy information (ThuThu only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Copies"
-                ],
-                "summary": "Update book copy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Book copy ID",
-                        "name": "maQuyenSach",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated book copy information",
-                        "name": "bookCopy",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.QuyenSach"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Book copy updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied - ThuThu only",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book copy not found",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a book copy (ThuThu only)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Copies"
-                ],
-                "summary": "Delete book copy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Book copy ID",
-                        "name": "maQuyenSach",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Book copy deleted successfully"
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied - ThuThu only",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book copy not found",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Cannot delete book copy currently on loan",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }

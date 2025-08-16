@@ -183,28 +183,3 @@ func (h *BorrowHandler) GetBorrows(c *gin.Context) {
 
 	c.JSON(http.StatusOK, listResponse)
 }
-
-// GetStats handles GET /manager/stats
-// Implements FR6 - Thống kê toàn hệ thống (Manager only, distributed query)
-// @Summary Get system statistics
-// @Description Get comprehensive statistics across all sites in the distributed system (Manager only)
-// @Tags Statistics
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} models.SystemStats "System statistics retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Manager role required"
-// @Failure 500 {object} models.ErrorResponse "Failed to retrieve system statistics"
-// @Router /manager/stats [get]
-func (h *BorrowHandler) GetStats(c *gin.Context) {
-	stats, err := h.borrowRepo.GetSystemStats()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to retrieve system statistics",
-			Details: err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, stats)
-}
