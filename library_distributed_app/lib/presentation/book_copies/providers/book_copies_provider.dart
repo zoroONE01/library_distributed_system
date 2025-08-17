@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:library_distributed_app/core/extensions/ref_extension.dart';
 import 'package:library_distributed_app/domain/entities/book_copy.dart';
 import 'package:library_distributed_app/domain/repositories/book_copies_repository.dart';
 import 'package:library_distributed_app/domain/usecases/book_copies_usecase.dart';
@@ -76,26 +75,18 @@ final bookCopiesSearchProvider = StateProvider<String>((ref) => '');
 /// Create new book copy - FR9: THUTHU only at their site
 @riverpod
 Future<void> createBookCopy(Ref ref, BookCopyEntity bookCopy) async {
-  try {
-    ref.startLoading();
+  final useCase = CreateBookCopyUseCase(ref.read(bookCopiesRepositoryProvider));
+  final result = await useCase.call(bookCopy);
+  ref.keepAlive();
 
-    final useCase = CreateBookCopyUseCase(
-      ref.read(bookCopiesRepositoryProvider),
-    );
-    final result = await useCase.call(bookCopy);
-
-    result.fold(
-      (success) {
-        // Refresh the list after successful creation
-        ref.invalidate(bookCopiesProvider);
-      },
-      (failure) {
-        throw failure;
-      },
-    );
-  } finally {
-    ref.stopLoading();
-  }
+  result.fold(
+    (success) {
+      ref.invalidate(bookCopiesProvider);
+    },
+    (failure) {
+      throw failure;
+    },
+  );
 }
 
 /// Update book copy - FR9: THUTHU only at their site
@@ -104,55 +95,39 @@ Future<void> updateBookCopy(
   Ref ref,
   ({String bookCopyId, BookCopyEntity bookCopy}) params,
 ) async {
-  try {
-    ref.startLoading();
+  final useCase = UpdateBookCopyUseCase(ref.read(bookCopiesRepositoryProvider));
+  final result = await useCase.call((
+    bookCopyId: params.bookCopyId,
+    bookCopy: params.bookCopy,
+  ));
+  ref.keepAlive();
 
-    final useCase = UpdateBookCopyUseCase(
-      ref.read(bookCopiesRepositoryProvider),
-    );
-    final result = await useCase.call((
-      bookCopyId: params.bookCopyId,
-      bookCopy: params.bookCopy,
-    ));
-
-    result.fold(
-      (success) {
-        // Refresh the list after successful update
-        ref.invalidate(bookCopiesProvider);
-      },
-      (failure) {
-        throw failure;
-      },
-    );
-  } finally {
-    ref.stopLoading();
-  }
+  result.fold(
+    (success) {
+      ref.invalidate(bookCopiesProvider);
+    },
+    (failure) {
+      throw failure;
+    },
+  );
 }
 
 /// Delete book copy - FR9: THUTHU only at their site
 /// Only allowed if book copy is not currently borrowed
 @riverpod
 Future<void> deleteBookCopy(Ref ref, String bookCopyId) async {
-  try {
-    ref.startLoading();
+  final useCase = DeleteBookCopyUseCase(ref.read(bookCopiesRepositoryProvider));
+  final result = await useCase.call(bookCopyId);
+  ref.keepAlive();
 
-    final useCase = DeleteBookCopyUseCase(
-      ref.read(bookCopiesRepositoryProvider),
-    );
-    final result = await useCase.call(bookCopyId);
-
-    result.fold(
-      (success) {
-        // Refresh the list after successful deletion
-        ref.invalidate(bookCopiesProvider);
-      },
-      (failure) {
-        throw failure;
-      },
-    );
-  } finally {
-    ref.stopLoading();
-  }
+  result.fold(
+    (success) {
+      ref.invalidate(bookCopiesProvider);
+    },
+    (failure) {
+      throw failure;
+    },
+  );
 }
 
 /// Check if book copy is available for operations
@@ -162,6 +137,7 @@ Future<bool> isBookCopyAvailable(Ref ref, String bookCopyId) async {
     ref.read(bookCopiesRepositoryProvider),
   );
   final result = await useCase.call(bookCopyId);
+  ref.keepAlive();
 
   return result.fold(
     (isAvailable) => isAvailable,
@@ -176,6 +152,7 @@ Future<BookCopyEntity> bookCopyById(Ref ref, String bookCopyId) async {
     ref.read(bookCopiesRepositoryProvider),
   );
   final result = await useCase.call(bookCopyId);
+  ref.keepAlive();
 
   return result.fold((bookCopy) => bookCopy, (failure) => throw failure);
 }
