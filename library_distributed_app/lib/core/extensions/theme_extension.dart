@@ -12,6 +12,12 @@ extension ThemeExtension on BuildContext {
       textTheme.headlineMedium ?? const TextStyle(fontSize: 24);
   TextStyle get headlineSmall =>
       textTheme.headlineSmall ?? const TextStyle(fontSize: 20);
+  TextStyle get titleLarge =>
+      textTheme.titleLarge ?? const TextStyle(fontSize: 22);
+  TextStyle get titleMedium =>
+      textTheme.titleMedium ?? const TextStyle(fontSize: 16);
+  TextStyle get titleSmall =>
+      textTheme.titleSmall ?? const TextStyle(fontSize: 14);
   TextStyle get bodyLarge =>
       textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
   TextStyle get bodyMedium =>
@@ -25,11 +31,18 @@ extension ThemeExtension on BuildContext {
 
   Color get primaryColor => colorScheme.primary;
   Color get primaryVariant => colorScheme.primaryContainer;
+  Color get primaryContainer => colorScheme.primaryContainer;
+  Color get onPrimaryContainer => colorScheme.onPrimaryContainer;
   Color get secondaryColor => colorScheme.secondary;
   Color get secondaryVariant => colorScheme.secondaryContainer;
   Color get surfaceColor => colorScheme.surface;
+  Color get surfaceContainer => colorScheme.surfaceContainer;
+  Color get surfaceContainerHighest => colorScheme.surfaceContainerHighest;
   Color get errorColor => colorScheme.error;
+  Color get errorContainer => colorScheme.errorContainer;
+  Color get onErrorContainer => colorScheme.onErrorContainer;
   Color get onPrimary => colorScheme.onPrimary;
   Color get onSecondary => colorScheme.onSecondary;
   Color get onSurface => colorScheme.onSurface;
+  Color get onSurfaceVariant => colorScheme.onSurfaceVariant;
 }

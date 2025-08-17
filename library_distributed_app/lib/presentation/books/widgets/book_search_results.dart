@@ -14,7 +14,7 @@ class BookSearchResults extends ConsumerWidget {
 
   final String searchQuery;
 
-    @override
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchResultsAsync = ref.watch(
       searchBooksSystemWideProvider(searchQuery),
@@ -155,7 +155,9 @@ class BookSearchResults extends ConsumerWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: context.primaryColor.withValues(alpha: 0.1),
+                              color: context.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: context.primaryColor.withValues(
