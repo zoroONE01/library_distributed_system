@@ -46,8 +46,8 @@ class MainPage extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 8),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.bar_chart_rounded),
-                label: Text('Chi nhánh'),
+                icon: Icon(Icons.transfer_within_a_station_rounded),
+                label: Text('Chuyển sách'),
                 padding: EdgeInsets.symmetric(vertical: 8),
               ),
             ],

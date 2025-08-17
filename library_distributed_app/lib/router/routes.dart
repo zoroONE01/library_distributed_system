@@ -27,8 +27,8 @@ part of 'router.dart';
       ],
     ),
     TypedStatefulShellBranch<StatefulShellBranchData>(
-      routes: <TypedGoRoute<BranchesRoute>>[
-        TypedGoRoute<BranchesRoute>(path: '/branches'),
+      routes: <TypedGoRoute<BookTransferRoute>>[
+        TypedGoRoute<BookTransferRoute>(path: '/book-transfer'),
       ],
     ),
   ],
@@ -83,12 +83,12 @@ class BorrowRoute extends GoRouteData {
   Widget build(BuildContext context, GoRouterState state) => const BorrowPage();
 }
 
-@TypedGoRoute<BranchesRoute>(path: '/branches')
-class BranchesRoute extends GoRouteData {
-  const BranchesRoute();
+@TypedGoRoute<BookTransferRoute>(path: '/book-transfer')
+class BookTransferRoute extends GoRouteData {
+  const BookTransferRoute();
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const BranchesPage();
+      const BookTransferPage();
 }
 
 @TypedGoRoute<LoginRoute>(path: '/login')

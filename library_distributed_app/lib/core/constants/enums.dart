@@ -15,6 +15,9 @@ enum Site {
         return Site.q1;
       case 'Q3':
         return Site.q3;
+      case '':
+      case null:
+        return Site.q1; // Default for managers or empty values
       default:
         return Site.q1;
     }

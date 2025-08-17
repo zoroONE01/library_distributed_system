@@ -10,7 +10,7 @@ class UserInfoModel {
   final String username;
   final UserRole role;
 
-  @JsonKey(name: 'maCN')
+  @JsonKey(name: 'maCN', fromJson: _siteFromJson)
   final Site? site;
 
   final String? permissions;
@@ -22,6 +22,14 @@ class UserInfoModel {
     this.site,
     this.permissions,
   });
+
+  static Site? _siteFromJson(dynamic value) {
+    if (value == null || value == '') {
+      // For managers (QUANLY) who don't have a specific site
+      return null;
+    }
+    return Site.fromString(value.toString());
+  }
 
   factory UserInfoModel.fromJson(Map<String, dynamic> json) =>
       _$UserInfoModelFromJson(json);

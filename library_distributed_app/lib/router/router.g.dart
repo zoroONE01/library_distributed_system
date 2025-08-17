@@ -13,7 +13,7 @@ List<RouteBase> get $appRoutes => [
   $bookCopiesRoute,
   $readerListRoute,
   $borrowRoute,
-  $branchesRoute,
+  $bookTransferRoute,
   $loginRoute,
 ];
 
@@ -64,9 +64,9 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
     StatefulShellBranchData.$branch(
       routes: [
         GoRouteData.$route(
-          path: '/branches',
+          path: '/book-transfer',
 
-          factory: $BranchesRouteExtension._fromState,
+          factory: $BookTransferRouteExtension._fromState,
         ),
       ],
     ),
@@ -154,10 +154,11 @@ extension $BorrowRouteExtension on BorrowRoute {
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $BranchesRouteExtension on BranchesRoute {
-  static BranchesRoute _fromState(GoRouterState state) => const BranchesRoute();
+extension $BookTransferRouteExtension on BookTransferRoute {
+  static BookTransferRoute _fromState(GoRouterState state) =>
+      const BookTransferRoute();
 
-  String get location => GoRouteData.$location('/branches');
+  String get location => GoRouteData.$location('/book-transfer');
 
   void go(BuildContext context) => context.go(location);
 
@@ -196,10 +197,10 @@ RouteBase get $borrowRoute => GoRouteData.$route(
   factory: $BorrowRouteExtension._fromState,
 );
 
-RouteBase get $branchesRoute => GoRouteData.$route(
-  path: '/branches',
+RouteBase get $bookTransferRoute => GoRouteData.$route(
+  path: '/book-transfer',
 
-  factory: $BranchesRouteExtension._fromState,
+  factory: $BookTransferRouteExtension._fromState,
 );
 
 RouteBase get $loginRoute => GoRouteData.$route(

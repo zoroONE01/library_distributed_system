@@ -18,10 +18,10 @@ import 'package:library_distributed_app/core/widgets/app_scaffold.dart';
 import 'package:library_distributed_app/core/widgets/app_table.dart';
 import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
-/// Borrowing Page - FR2 and FR3 Implementation
+/// Borrowing Page - FR2, FR3 Implementation
 /// Supports role-based access control:
 /// - THUTHU: Can create borrow records and return books at their branch
-/// - QUANLY: Can view borrowing statistics across all branches
+/// - QUANLY: Can view borrowing statistics across all branches (book transfer moved to dedicated page)
 class BorrowPage extends ConsumerStatefulWidget {
   const BorrowPage({super.key});
 
@@ -44,12 +44,10 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
 
     return userInfoAsync.when(
       data: (userInfo) => _buildPage(context, userInfo),
-      loading: () => const AppScaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => AppScaffold(
-        body: Center(child: Text('Lỗi: $error')),
-      ),
+      loading: () =>
+          const AppScaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          AppScaffold(body: Center(child: Text('Lỗi: $error'))),
     );
   }
 
@@ -73,17 +71,21 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
         final title = userInfo.role == UserRole.librarian
             ? 'Quản lý mượn/trả sách - Chi nhánh ${site.text}'
             : 'Thống kê mượn/trả - Toàn hệ thống';
-        
+
         return Row(
           mainAxisSize: MainAxisSize.min,
           spacing: 10,
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: context.headlineSmall.bold,
-                overflow: TextOverflow.ellipsis,
-              ).withIcon(Icons.book_online_rounded, iconColor: context.primaryColor),
+              child:
+                  Text(
+                    title,
+                    style: context.headlineSmall.bold,
+                    overflow: TextOverflow.ellipsis,
+                  ).withIcon(
+                    Icons.book_online_rounded,
+                    iconColor: context.primaryColor,
+                  ),
             ),
             // Only THUTHU can create borrow records (FR2)
             if (userInfo.role == UserRole.librarian)
@@ -128,7 +130,9 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
                     Future.delayed(const Duration(milliseconds: 500), () {
                       if (_searchController.text == value) {
                         ref.read(borrowSearchProvider.notifier).state = value;
-                        ref.read(borrowRecordsProvider.notifier).fetchData(0, value.isEmpty ? null : value);
+                        ref
+                            .read(borrowRecordsProvider.notifier)
+                            .fetchData(0, value.isEmpty ? null : value);
                       }
                     });
                   },
@@ -183,7 +187,11 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
     );
   }
 
-  Widget _buildTable(BuildContext context, List<BorrowRecordWithDetailsEntity> records, UserInfoEntity userInfo) {
+  Widget _buildTable(
+    BuildContext context,
+    List<BorrowRecordWithDetailsEntity> records,
+    UserInfoEntity userInfo,
+  ) {
     if (records.isEmpty) {
       return Container(
         height: 300,
@@ -196,11 +204,17 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.book_online_outlined, size: 48, color: context.onSurfaceVariant),
+              Icon(
+                Icons.book_online_outlined,
+                size: 48,
+                color: context.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Không tìm thấy phiếu mượn nào',
-                style: context.bodyLarge.copyWith(color: context.onSurfaceVariant),
+                style: context.bodyLarge.copyWith(
+                  color: context.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -209,16 +223,15 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
     }
 
     final titles = _buildTableHeaders(userInfo);
-    final rows = records.map((record) => _buildTableRow(context, record, userInfo)).toList();
+    final rows = records
+        .map((record) => _buildTableRow(context, record, userInfo))
+        .toList();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: AppTable.build(
-        context,
-        titles: titles,
-        rows: rows,
-        columnWidths: _getColumnWidths(userInfo),
-      ),
+    return AppTable.build(
+      context,
+      titles: titles,
+      rows: rows,
+      columnWidths: _getColumnWidths(userInfo),
     );
   }
 
@@ -247,45 +260,69 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
 
   List<double> _getColumnWidths(UserInfoEntity userInfo) {
     final baseWidths = [1.2, 1.0, 1.5, 1.0, 2.0, 1.0, 1.0, 1.0];
-    
+
     if (userInfo.role == UserRole.manager) {
       baseWidths.insert(1, 1.0); // Chi nhánh column
     }
-    
+
     if (userInfo.role == UserRole.librarian) {
       baseWidths.add(1.0); // Thao tác column
     }
-    
+
     return baseWidths;
   }
 
-  TableRow _buildTableRow(BuildContext context, BorrowRecordWithDetailsEntity record, UserInfoEntity userInfo) {
+  TableRow _buildTableRow(
+    BuildContext context,
+    BorrowRecordWithDetailsEntity record,
+    UserInfoEntity userInfo,
+  ) {
     final cells = <Widget>[
       AppTable.buildTextCell(context, text: record.borrowId.toString()),
       AppTable.buildTextCell(context, text: record.readerId),
       AppTable.buildTextCell(context, text: record.readerName),
       AppTable.buildTextCell(context, text: record.bookIsbn),
       AppTable.buildTextCell(context, text: record.bookTitle),
-      AppTable.buildTextCell(context, text: AppUtils.formatDate(record.borrowDate)),
-      AppTable.buildTextCell(context, text: AppUtils.formatDate(record.dueDate)),
-      AppTable.buildWidgetCell(context, child: _buildStatusChip(context, record)),
+      AppTable.buildTextCell(
+        context,
+        text: AppUtils.formatDate(record.borrowDate),
+      ),
+      AppTable.buildTextCell(
+        context,
+        text: AppUtils.formatDate(record.dueDate),
+      ),
+      AppTable.buildWidgetCell(
+        context,
+        child: _buildStatusChip(context, record),
+      ),
     ];
 
     if (userInfo.role == UserRole.manager) {
-      cells.insert(1, AppTable.buildTextCell(context, text: record.branch.text));
+      cells.insert(
+        1,
+        AppTable.buildTextCell(context, text: record.branch.text),
+      );
     }
 
     if (userInfo.role == UserRole.librarian) {
-      cells.add(AppTable.buildWidgetCell(context, child: _buildActionButton(context, record, userInfo)));
+      cells.add(
+        AppTable.buildWidgetCell(
+          context,
+          child: _buildActionButton(context, record, userInfo),
+        ),
+      );
     }
 
     return TableRow(children: cells);
   }
 
-  Widget _buildStatusChip(BuildContext context, BorrowRecordWithDetailsEntity record) {
+  Widget _buildStatusChip(
+    BuildContext context,
+    BorrowRecordWithDetailsEntity record,
+  ) {
     Color chipColor;
     String statusText;
-    
+
     if (record.isReturned) {
       chipColor = context.surfaceContainerHighest;
       statusText = 'Đã trả';
@@ -306,22 +343,26 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
       child: Text(
         statusText,
         style: context.bodySmall.copyWith(
-          color: record.isReturned 
+          color: record.isReturned
               ? context.onSurfaceVariant
-              : record.isOverdue 
-                  ? context.onErrorContainer
-                  : context.onPrimaryContainer,
+              : record.isOverdue
+              ? context.onErrorContainer
+              : context.onPrimaryContainer,
         ),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  Widget _buildActionButton(BuildContext context, BorrowRecordWithDetailsEntity record, UserInfoEntity userInfo) {
+  Widget _buildActionButton(
+    BuildContext context,
+    BorrowRecordWithDetailsEntity record,
+    UserInfoEntity userInfo,
+  ) {
     final currentSite = ref.watch(librarySiteProvider);
-    
+
     // Only show return button for THUTHU at their branch and if book is not returned yet
-    if (userInfo.role != UserRole.librarian || 
+    if (userInfo.role != UserRole.librarian ||
         record.isReturned ||
         record.branch != currentSite) {
       return const SizedBox.shrink();
@@ -338,12 +379,12 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
 
   Widget _buildPagination(BuildContext context) {
     final paginationState = ref.watch(borrowRecordsPaginationProvider);
-    
+
     // Don't show pagination if no data or only one page
     if (paginationState.totalItems == 0 || paginationState.totalPages <= 1) {
       return const SizedBox.shrink();
     }
-    
+
     return AppPagination(
       currentPage: paginationState.currentPage,
       totalPages: paginationState.totalPages,
@@ -351,15 +392,17 @@ class _BorrowPageState extends ConsumerState<BorrowPage> {
       itemsPerPage: paginationState.itemsPerPage,
       onPageChanged: (page) {
         final searchQuery = ref.read(borrowSearchProvider);
-        ref.read(borrowRecordsProvider.notifier).fetchData(
-          page,
-          searchQuery.isEmpty ? null : searchQuery,
-        );
+        ref
+            .read(borrowRecordsProvider.notifier)
+            .fetchData(page, searchQuery.isEmpty ? null : searchQuery);
       },
     );
   }
 
-  void _showReturnBookDialog(BuildContext context, BorrowRecordWithDetailsEntity record) {
+  void _showReturnBookDialog(
+    BuildContext context,
+    BorrowRecordWithDetailsEntity record,
+  ) {
     ReturnBookDialog(record: record).showAsDialog(context).then((result) {
       if (result != null) {
         // Refresh the list after return

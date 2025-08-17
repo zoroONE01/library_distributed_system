@@ -117,14 +117,22 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	// Get detailed user information using sp_GetUserInfo
-	userInfo, err := h.userRepo.GetCurrentUserInfo(claims.Username)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to get user information",
-			Details: err.Error(),
-		})
-		return
+	// Build user info directly from JWT claims (more secure and efficient)
+	userInfo := &models.UserInfo{
+		ID:       claims.Username,
+		Username: claims.Username,
+		Role:     claims.Role,
+		MaCN:     claims.MaCN,
+	}
+
+	// Set permissions based on role
+	switch claims.Role {
+	case "THUTHU":
+		userInfo.Permissions = "BRANCH_ACCESS,BOOK_BORROW,BOOK_RETURN,BOOK_COPY_MANAGEMENT,READER_MANAGEMENT"
+	case "QUANLY":
+		userInfo.Permissions = "SYSTEM_ACCESS,ALL_BRANCHES,STATISTICS,REPORTS,BOOK_CATALOG_MANAGEMENT"
+	default:
+		userInfo.Permissions = ""
 	}
 
 	c.JSON(http.StatusOK, userInfo)
