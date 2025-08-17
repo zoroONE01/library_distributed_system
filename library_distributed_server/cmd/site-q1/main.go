@@ -63,9 +63,9 @@ func main() {
 
 	authService := auth.NewAuthService(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiry)
 	userRepo := repository.NewUserRepository(cfg, SITE_ID)
-	bookRepo := repository.NewBookRepository(cfg)
-	borrowRepo := repository.NewBorrowRepository(cfg)
-	readerRepo := repository.NewReaderRepository(cfg)
+	bookRepo := repository.NewBookRepository(cfg, SITE_ID)
+	borrowRepo := repository.NewBorrowRepository(cfg, SITE_ID)
+	readerRepo := repository.NewReaderRepository(cfg, SITE_ID)
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	bookHandler := handlers.NewBookHandler(bookRepo, SITE_ID)
 	borrowHandler := handlers.NewBorrowHandler(borrowRepo, SITE_ID)

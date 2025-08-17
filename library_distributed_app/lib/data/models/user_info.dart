@@ -12,13 +12,13 @@ class UserInfoModel {
 
   @JsonKey(name: 'maCN')
   final Site? site;
-  
+
   final String? permissions;
 
-  UserInfoModel({
-    required this.id,
-    required this.username,
-    required this.role,
+  const UserInfoModel({
+    this.id = '',
+    this.username = '',
+    this.role = UserRole.librarian,
     this.site,
     this.permissions,
   });

@@ -14,10 +14,10 @@ class BookCopyModel {
   final String status;
 
   const BookCopyModel({
-    required this.bookCopyId,
-    required this.isbn,
-    required this.branchSite,
-    required this.status,
+    this.bookCopyId = '',
+    this.isbn = '',
+    this.branchSite = Site.q1,
+    this.status = '',
   });
 
   factory BookCopyModel.fromJson(Map<String, dynamic> json) =>

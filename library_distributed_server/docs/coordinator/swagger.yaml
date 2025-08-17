@@ -42,23 +42,6 @@ definitions:
     - maQuyenSach
     - toSite
     type: object
-  models.BookSearchResult:
-    description: Book search result with availability across branches
-    properties:
-      chiNhanh:
-        description: Available branches
-        items:
-          $ref: '#/definitions/models.ChiNhanh'
-        type: array
-      sach:
-        allOf:
-        - $ref: '#/definitions/models.Sach'
-        description: Book information
-      soLuongCo:
-        description: Total available copies
-        example: 5
-        type: integer
-    type: object
   models.BookWithAvailability:
     description: Book information combined with availability count for client applications
     properties:
@@ -86,25 +69,6 @@ definitions:
         description: Total copies count
         example: 10
         type: integer
-    type: object
-  models.ChiNhanh:
-    description: Branch information (fully replicated across all sites)
-    properties:
-      diaChi:
-        description: Branch address
-        example: 123 Nguyễn Huệ, Q1, TP.HCM
-        type: string
-      maCN:
-        description: Branch code
-        example: Q1
-        type: string
-      tenCN:
-        description: Branch name
-        example: Thư Viện Quận 1
-        type: string
-    required:
-    - maCN
-    - tenCN
     type: object
   models.CreateBorrowRequest:
     description: Request payload for creating a borrow transaction
@@ -176,38 +140,6 @@ definitions:
         description: Total number of pages (matches Flutter)
         example: 10
         type: integer
-    type: object
-  models.PhieuMuon:
-    description: Borrow transaction (fragmented by branch)
-    properties:
-      maCN:
-        description: Branch code
-        example: Q1
-        type: string
-      maDG:
-        description: Reader ID
-        example: DG001
-        type: string
-      maPM:
-        description: Borrow ID (auto-generated)
-        example: 1
-        type: integer
-      maQuyenSach:
-        description: Book copy ID
-        example: QS001
-        type: string
-      ngayMuon:
-        description: Borrow date
-        example: "2025-01-15T10:00:00Z"
-        type: string
-      ngayTra:
-        description: Return date (null if not returned)
-        example: "2025-01-20T14:00:00Z"
-        type: string
-    required:
-    - maCN
-    - maDG
-    - maQuyenSach
     type: object
   models.QuyenSach:
     description: Book copy information (fragmented by branch)
@@ -302,19 +234,6 @@ definitions:
         example: true
         type: boolean
     type: object
-  models.SystemStats:
-    description: Distributed system statistics
-    properties:
-      statsBySite:
-        additionalProperties:
-          $ref: '#/definitions/models.SiteStats'
-        description: Statistics by site
-        type: object
-      totalBooksOnLoan:
-        description: Total books on loan across all sites
-        example: 150
-        type: integer
-    type: object
   models.SystemStatsResponse:
     description: Comprehensive system statistics across all sites
     properties:
@@ -352,6 +271,27 @@ definitions:
         description: Total registered readers
         example: 2000
         type: integer
+    type: object
+  models.TransferBookRequest:
+    description: Request payload for transferring a book copy between sites using
+      2PC protocol
+    properties:
+      fromSite:
+        description: Source site ID
+        example: Q1
+        type: string
+      maQuyenSach:
+        description: Book copy ID to transfer
+        example: QS001
+        type: string
+      toSite:
+        description: Destination site ID
+        example: Q3
+        type: string
+    required:
+    - fromSite
+    - maQuyenSach
+    - toSite
     type: object
   models.TransferBookResponse:
     description: Response after successful book transfer using 2PC protocol
@@ -508,47 +448,34 @@ paths:
       - Authentication
   /book-copies:
     get:
-      description: Get book copies with pagination - THUTHU sees local site only,
-        QUANLY sees system-wide
+      description: Retrieve book copies for the current site
       parameters:
-      - default: 0
-        description: Page number (0-based)
+      - description: Page number (0-based, default 0)
         in: query
         name: page
         type: integer
-      - default: 20
-        description: Items per page
+      - description: Page size (default 20)
         in: query
         name: size
         type: integer
-      - description: Search term for book title, author, or ISBN
-        in: query
-        name: search
-        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Book copies retrieved successfully
+          description: List of book copies
           schema:
             $ref: '#/definitions/models.ListResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to retrieve book copies
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get book copies based on user role with pagination
+      summary: Get book copies
       tags:
       - Book Copies
     post:
       consumes:
       - application/json
-      description: Create a new book copy at the user's site (ThuThu only)
+      description: Create a new book copy at the current site
       parameters:
       - description: Book copy information
         in: body
@@ -560,75 +487,23 @@ paths:
       - application/json
       responses:
         "201":
-          description: Book copy created successfully
+          description: Book copy created
           schema:
-            $ref: '#/definitions/models.QuyenSach'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "409":
-          description: Book copy already exists
+          description: Invalid request
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to create book copy
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create new book copy
+      summary: Create book copy
       tags:
       - Book Copies
   /book-copies/{maQuyenSach}:
     delete:
-      description: Delete a book copy (ThuThu only)
-      parameters:
-      - description: Book copy ID
-        in: path
-        name: maQuyenSach
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Book copy deleted successfully
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "404":
-          description: Book copy not found
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "409":
-          description: Cannot delete book copy currently on loan
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete book copy
-      tags:
-      - Book Copies
-    get:
-      description: Get book copy information by ID
+      description: Delete a book copy
       parameters:
       - description: Book copy ID
         in: path
@@ -639,30 +514,50 @@ paths:
       - application/json
       responses:
         "200":
-          description: Book copy found
+          description: Book copy deleted
           schema:
-            $ref: '#/definitions/models.QuyenSach'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "404":
           description: Book copy not found
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to delete book copy
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
+      summary: Delete book copy
+      tags:
+      - Book Copies
+    get:
+      description: Get detailed information about a book copy
+      parameters:
+      - description: Book copy ID
+        in: path
+        name: maQuyenSach
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book copy details
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Book copy not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve book copy
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get book copy by ID
       tags:
       - Book Copies
     put:
       consumes:
       - application/json
-      description: Update book copy information (ThuThu only)
+      description: Update book copy information
       parameters:
       - description: Book copy ID
         in: path
@@ -679,19 +574,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: Book copy updated successfully
+          description: Book copy updated
           schema:
             $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only
+          description: Invalid request
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "404":
@@ -699,26 +586,21 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to update book copy
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Update book copy
       tags:
       - Book Copies
   /books:
     get:
-      description: Get all books available in the library system with availability
-        count and pagination (enhanced for Flutter app)
+      description: Retrieve all books in the catalog
       parameters:
-      - default: 0
-        description: Page number (0-based)
+      - description: Page number (0-based, default 0)
         in: query
         name: page
         type: integer
-      - default: 20
-        description: Items per page
+      - description: Page size (default 20)
         in: query
         name: size
         type: integer
@@ -726,25 +608,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: Books with availability retrieved successfully
+          description: List of books
           schema:
             $ref: '#/definitions/models.ListResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to retrieve books
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all books with availability and pagination
+      summary: Get all books
       tags:
       - Books
   /books/{isbn}:
     get:
-      description: Get detailed information about a specific book by its ISBN
+      description: Get detailed information about a book by its ISBN
       parameters:
       - description: Book ISBN
         in: path
@@ -755,29 +631,23 @@ paths:
       - application/json
       responses:
         "200":
-          description: Book found
+          description: Book details
           schema:
-            $ref: '#/definitions/models.Sach'
-        "400":
-          description: Invalid ISBN parameter
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "404":
           description: Book not found
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
+        "500":
+          description: Failed to retrieve book
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get book by ISBN
       tags:
       - Books
   /books/{isbn}/available:
     get:
-      description: Get an available copy of a book at the current site
+      description: Check if a book is available at the current site
       parameters:
       - description: Book ISBN
         in: path
@@ -788,67 +658,71 @@ paths:
       - application/json
       responses:
         "200":
-          description: Available copy found
+          description: Availability info
           schema:
-            $ref: '#/definitions/models.QuyenSach'
-        "400":
-          description: Invalid ISBN parameter
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "404":
-          description: No available copy found
+          description: No available copies
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get available book copy
+        "500":
+          description: Failed to check availability
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Check book availability
       tags:
       - Books
-  /borrow:
+  /books/search:
     get:
-      description: Get all borrow records for the current site with pagination (Librarian
-        only)
+      description: Search for books across all sites with availability info
       parameters:
-      - default: 0
-        description: Page number (0-based)
+      - description: Search query
         in: query
-        name: page
-        type: integer
-      - default: 20
-        description: Items per page
-        in: query
-        name: size
-        type: integer
-      - description: Search term for reader name or borrow ID
-        in: query
-        name: search
+        name: query
+        required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Borrow records retrieved successfully
+          description: Search results
           schema:
-            $ref: '#/definitions/models.ListResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied to this site
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid query
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Failed to retrieve borrow records
+          description: Search failed
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get borrow records with pagination
+      summary: Search books across all sites
+      tags:
+      - Books
+  /borrow:
+    get:
+      description: Retrieve borrow transactions with role-based filtering
+      parameters:
+      - description: Page number (0-based, default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of borrow transactions
+          schema:
+            $ref: '#/definitions/models.ListResponse'
+        "500":
+          description: Failed to retrieve borrows
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get borrow transactions
       tags:
       - Borrowing
     post:
@@ -856,7 +730,7 @@ paths:
       - application/json
       description: Create a new book borrowing transaction (Librarian only)
       parameters:
-      - description: Borrow request details
+      - description: Borrow request
         in: body
         name: request
         required: true
@@ -866,109 +740,144 @@ paths:
       - application/json
       responses:
         "201":
-          description: Borrow record created successfully
+          description: Borrow created successfully
           schema:
-            $ref: '#/definitions/models.PhieuMuon'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied to this site
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Failed to create borrow record
+          description: Failed to create borrow
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Create borrow transaction
       tags:
       - Borrowing
   /borrow/detailed:
     get:
-      description: Get borrow records with book and reader details with pagination
-        (enhanced for Flutter app)
+      description: Get borrow records with book and reader details for Flutter app
       parameters:
-      - default: 0
-        description: Page number (0-based)
+      - description: Page number (0-based, default 0)
         in: query
         name: page
         type: integer
-      - default: 20
-        description: Items per page
+      - description: Page size (default 20)
         in: query
         name: size
         type: integer
-      - description: Search term for book title, author, or reader name
-        in: query
-        name: search
-        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Detailed borrow records retrieved successfully
+          description: List of detailed borrow records
           schema:
             $ref: '#/definitions/models.ListResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to retrieve borrow records
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get borrow records with details and pagination
+      summary: Get detailed borrow records
+      tags:
+      - Borrowing
+  /borrow/history/{maDG}:
+    get:
+      description: Get borrowing history for a specific reader
+      parameters:
+      - description: Reader ID
+        in: path
+        name: maDG
+        required: true
+        type: string
+      - description: Page number (0-based, default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reader's borrow history
+          schema:
+            $ref: '#/definitions/models.ListResponse'
+        "500":
+          description: Failed to retrieve borrow history
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get borrow history for a reader
+      tags:
+      - Borrowing
+  /borrow/overdue:
+    get:
+      description: Get list of overdue books for the site
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of overdue books
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "500":
+          description: Failed to retrieve overdue books
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get overdue books
       tags:
       - Borrowing
   /borrow/return/{id}:
     put:
       consumes:
       - application/json
-      description: Return a borrowed book and update its status (Librarian only)
+      description: Process book return transaction (Librarian only)
       parameters:
-      - description: Borrow transaction ID
+      - description: Book copy ID
         in: path
         name: id
         required: true
-        type: integer
-      - description: Return details (optional)
+        type: string
+      - description: Return request
         in: body
         name: request
+        required: true
         schema:
           $ref: '#/definitions/models.ReturnBookRequest'
       produces:
       - application/json
       responses:
-        "204":
+        "200":
           description: Book returned successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid borrow ID format
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied to this site
+          description: Invalid request
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Failed to return book
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Return borrowed book
+      tags:
+      - Borrowing
+  /borrow/statistics:
+    get:
+      description: Get borrowing statistics for the site
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Borrowing statistics
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "500":
+          description: Failed to retrieve statistics
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get borrowing statistics
       tags:
       - Borrowing
   /coordinator/transfer-book:
@@ -1006,7 +915,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new book in the catalog using 2-Phase Commit (Manager
+      description: Create a new book in the system catalog using 2PC protocol (Manager
         only)
       parameters:
       - description: Book information
@@ -1021,35 +930,21 @@ paths:
         "201":
           description: Book created successfully
           schema:
-            $ref: '#/definitions/models.Sach'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - Manager only
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "409":
-          description: Book already exists
+          description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to create book
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create new book (2PC)
+      summary: Create book in catalog
       tags:
       - Manager
   /manager/books/{isbn}:
-    get:
-      description: Get book information by ISBN (Manager only)
+    delete:
+      description: Delete book from catalog using 2PC protocol (Manager only)
       parameters:
       - description: Book ISBN
         in: path
@@ -1060,15 +955,71 @@ paths:
       - application/json
       responses:
         "200":
-          description: Book found
+          description: Book deleted successfully
           schema:
-            $ref: '#/definitions/models.Sach'
-        "401":
-          description: Unauthorized
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Book not found
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - Manager only
+        "500":
+          description: Failed to delete book
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete book from catalog
+      tags:
+      - Manager
+    get:
+      description: Get book information from catalog (Manager only)
+      parameters:
+      - description: Book ISBN
+        in: path
+        name: isbn
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book information
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve book
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get book by ISBN
+      tags:
+      - Manager
+    put:
+      consumes:
+      - application/json
+      description: Update book information using 2PC protocol (Manager only)
+      parameters:
+      - description: Book ISBN
+        in: path
+        name: isbn
+        required: true
+        type: string
+      - description: Updated book information
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/models.Sach'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book updated successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "404":
@@ -1076,152 +1027,138 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to update book
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get book by ISBN
+      summary: Update book in catalog
       tags:
       - Manager
   /manager/books/search:
     get:
-      description: Search for available books across all sites (Manager only)
+      description: Search for books across all sites with availability information
+        (Manager only)
       parameters:
-      - description: Book title search term
+      - description: Search query
         in: query
-        name: tenSach
+        name: query
+        required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Search results
+          description: Search results with availability
           schema:
-            items:
-              $ref: '#/definitions/models.BookSearchResult'
-            type: array
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Missing search parameters
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - Manager only
+          description: Invalid query
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Search failed
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Search available books system-wide
+      summary: Search books across all sites
       tags:
       - Manager
   /manager/readers:
     get:
-      description: Get all readers from all sites in the distributed system (Manager
-        only)
+      description: Get readers from all sites with pagination (Manager only)
       parameters:
-      - description: Search term for reader name
+      - description: Page number (0-based, default 0)
         in: query
-        name: search
-        type: string
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Readers retrieved successfully
+          description: List of all readers
           schema:
-            items:
-              $ref: '#/definitions/models.DocGia'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - Manager only
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.ListResponse'
         "500":
-          description: Internal server error
+          description: Failed to retrieve readers
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all readers system-wide
+      summary: Get all readers across all sites
       tags:
       - Manager
   /manager/statistics:
     get:
-      description: Get comprehensive statistics from all sites in the distributed
-        system (Manager only)
+      description: Get comprehensive statistics across all sites (Manager only)
       produces:
       - application/json
       responses:
         "200":
-          description: Statistics retrieved successfully
+          description: System statistics
           schema:
-            $ref: '#/definitions/models.SystemStats'
-        "401":
-          description: Unauthorized
+            $ref: '#/definitions/models.SuccessResponse'
+        "500":
+          description: Failed to retrieve statistics
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - Manager only
+      summary: Get system-wide statistics
+      tags:
+      - Manager
+  /manager/transfer:
+    post:
+      consumes:
+      - application/json
+      description: Transfer a book copy from one site to another using 2PC protocol
+      parameters:
+      - description: Transfer request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransferBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book copy transferred successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to transfer book copy
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get system-wide statistics
+      summary: Transfer book copy between sites
       tags:
       - Manager
   /readers:
     get:
-      description: Get readers with pagination - THUTHU sees local site only, QUANLY
-        sees all sites
+      description: 'Get readers with role-based filtering (ThuThu: local site, QuanLy:
+        all sites)'
       parameters:
-      - default: 0
-        description: Page number (0-based)
+      - description: Page number (0-based, default 0)
         in: query
         name: page
         type: integer
-      - default: 20
-        description: Items per page
+      - description: Page size (default 20)
         in: query
         name: size
         type: integer
-      - description: Search term for reader name or ID
-        in: query
-        name: search
-        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Readers retrieved successfully
+          description: List of readers
           schema:
             $ref: '#/definitions/models.ListResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to retrieve readers
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get readers based on user role with pagination
+      summary: Get all readers
       tags:
       - Readers
     post:
@@ -1241,74 +1178,21 @@ paths:
         "201":
           description: Reader created successfully
           schema:
-            $ref: '#/definitions/models.DocGia'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "409":
-          description: Reader already exists
+          description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to create reader
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Create new reader
       tags:
       - Readers
   /readers/{maDG}:
     delete:
-      description: Delete a reader (ThuThu only at their site)
-      parameters:
-      - description: Reader ID
-        in: path
-        name: maDG
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Reader deleted successfully
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only or wrong site
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "404":
-          description: Reader not found
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "409":
-          description: Cannot delete reader with active borrows
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete reader
-      tags:
-      - Readers
-    get:
-      description: Get reader information by ID - access based on user role and reader
-        location
+      description: Delete reader (ThuThu only)
       parameters:
       - description: Reader ID
         in: path
@@ -1319,34 +1203,50 @@ paths:
       - application/json
       responses:
         "200":
-          description: Reader found
+          description: Reader deleted successfully
           schema:
-            $ref: '#/definitions/models.DocGia'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - reader not at user's site
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "404":
           description: Reader not found
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to delete reader
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
+      summary: Delete reader
+      tags:
+      - Readers
+    get:
+      description: Get reader information by ID with role-based access control
+      parameters:
+      - description: Reader ID
+        in: path
+        name: maDG
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reader information
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Reader not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve reader
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get reader by ID
       tags:
       - Readers
     put:
       consumes:
       - application/json
-      description: Update reader information (ThuThu only at their site)
+      description: Update reader information (ThuThu only)
       parameters:
       - description: Reader ID
         in: path
@@ -1365,21 +1265,119 @@ paths:
         "200":
           description: Reader updated successfully
           schema:
-            $ref: '#/definitions/models.DocGia'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "403":
-          description: Access denied - ThuThu only or wrong site
+          description: Invalid request format
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Reader not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to update reader
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update reader
+      tags:
+      - Readers
+  /readers/{maDG}/stats:
+    get:
+      description: Get reader information with borrowing statistics
+      parameters:
+      - description: Reader ID
+        in: path
+        name: maDG
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reader with statistics
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Reader not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve reader statistics
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get reader with statistics
+      tags:
+      - Readers
+  /readers/search:
+    get:
+      description: Search for readers across sites (role-based access)
+      parameters:
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      - description: Page number (0-based, default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results
+          schema:
+            $ref: '#/definitions/models.ListResponse'
+        "400":
+          description: Invalid query
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Search failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Search readers
+      tags:
+      - Readers
+  /readers/stats:
+    get:
+      description: Get all readers with borrowing statistics for the site
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Readers with statistics
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "500":
+          description: Failed to retrieve reader statistics
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get readers with statistics
+      tags:
+      - Readers
+  /stats/borrow-trends:
+    get:
+      description: Get borrowing trends for site analysis
+      parameters:
+      - default: 30
+        description: Number of days to analyze
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Borrow trends retrieved successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
@@ -1388,9 +1386,88 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Update reader
+      summary: Get borrowing trends
       tags:
-      - Readers
+      - Statistics
+  /stats/distributed:
+    get:
+      description: Get distributed system health and statistics (Manager only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Distributed statistics retrieved successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Access denied - Manager role required
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get distributed system statistics
+      tags:
+      - Statistics
+  /stats/health:
+    get:
+      description: Get system health status across all sites
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System health retrieved successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get system health
+      tags:
+      - Statistics
+  /stats/popular-books:
+    get:
+      description: Get popular books based on borrowing frequency
+      parameters:
+      - default: 10
+        description: Number of books to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Popular books statistics retrieved successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get popular books statistics
+      tags:
+      - Statistics
   /stats/readers:
     get:
       description: Get readers with borrowing statistics with pagination (enhanced
@@ -1428,6 +1505,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Get readers with statistics and pagination
+      tags:
+      - Statistics
+  /stats/site:
+    get:
+      description: Get statistics for current site (available to both roles)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Site statistics retrieved successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get site statistics
       tags:
       - Statistics
   /stats/system:

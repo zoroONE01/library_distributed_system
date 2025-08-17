@@ -7,7 +7,7 @@ class LoginFormModel {
   final String username;
   final String password;
 
-  const LoginFormModel({required this.username, required this.password});
+  const LoginFormModel({this.username = '', this.password = ''});
 
   factory LoginFormModel.fromJson(Map<String, dynamic> json) =>
       _$LoginFormModelFromJson(json);

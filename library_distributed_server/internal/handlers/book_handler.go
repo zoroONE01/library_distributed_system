@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"library_distributed_server/internal/models"
 	"library_distributed_server/internal/repository"
@@ -11,11 +12,11 @@ import (
 )
 
 type BookHandler struct {
-	bookRepo *repository.BookRepository
+	bookRepo repository.BookRepositoryInterface
 	siteID   string
 }
 
-func NewBookHandler(bookRepo *repository.BookRepository, siteID string) *BookHandler {
+func NewBookHandler(bookRepo repository.BookRepositoryInterface, siteID string) *BookHandler {
 	return &BookHandler{
 		bookRepo: bookRepo,
 		siteID:   siteID,
@@ -23,292 +24,191 @@ func NewBookHandler(bookRepo *repository.BookRepository, siteID string) *BookHan
 }
 
 // GetBooks handles GET /books
-// Returns all books from the catalog with availability information and pagination
-// @Summary Get all books with availability and pagination
-// @Description Get all books available in the library system with availability count and pagination (enhanced for Flutter app)
+// @Summary Get all books
+// @Description Retrieve all books in the catalog
 // @Tags Books
 // @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (0-based)" default(0)
-// @Param size query int false "Items per page" default(20)
-// @Success 200 {object} models.ListResponse "Books with availability retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "List of books"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve books"
 // @Router /books [get]
 func (h *BookHandler) GetBooks(c *gin.Context) {
-	userRole := c.GetString("role")
-	siteID := c.GetString("maCN")
-	if siteID == "" {
-		siteID = h.siteID
-	}
-
-	// Parse pagination parameters
+	ctx := c.Request.Context()
 	pagination := utils.ParsePaginationParams(c)
 
-	// Use enhanced paginated repository method
-	result, err := h.bookRepo.GetBooksWithAvailabilityPaginated(siteID, userRole, pagination)
-	if err != nil {
-		// Fallback to regular books pagination if enhanced method fails
-		fallbackResult, fallbackErr := h.bookRepo.GetBooksPaginated(h.siteID, pagination)
-		if fallbackErr != nil {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error:   "Failed to retrieve books",
-				Details: err.Error(),
-			})
-			return
-		}
-
-		// Create response in Flutter-compatible format
-		listResponse := utils.CreateListResponse(fallbackResult.Data, fallbackResult.Pagination, fallbackResult.TotalCount)
-		c.JSON(http.StatusOK, listResponse)
-		return
-	}
-
-	// Create response in Flutter-compatible format
-	listResponse := utils.CreateListResponse(result.Data, result.Pagination, result.TotalCount)
-	c.JSON(http.StatusOK, listResponse)
-}
-
-// GetBookCopies handles GET /book-copies and /site/{siteID}/book-copies
-// Returns book copies based on user role with pagination - THUTHU sees local site, QUANLY sees all sites
-// @Summary Get book copies based on user role with pagination
-// @Description Get book copies with pagination - THUTHU sees local site only, QUANLY sees system-wide
-// @Tags Book Copies
-// @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (0-based)" default(0)
-// @Param size query int false "Items per page" default(20)
-// @Param search query string false "Search term for book title, author, or ISBN"
-// @Success 200 {object} models.ListResponse "Book copies retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /book-copies [get]
-func (h *BookHandler) GetBookCopies(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
-	// Parse pagination parameters
-	pagination := utils.ParsePaginationParams(c)
-	searchTerm := utils.GetSearchTerm(c)
-
-	var allCopies []models.QuyenSach
-	var totalCount int
-
-	// Role-based data access per requirements
-	if claims.Role == "QUANLY" {
-		// QuanLy can see book copies from all sites - query all sites and combine
-		allConnections := map[string]string{"Q1": "Q1", "Q3": "Q3"}
-
-		// For system-wide pagination, we need to handle this differently
-		// Get all data and paginate in memory (not ideal for large datasets)
-		for siteID := range allConnections {
-			result, siteErr := h.bookRepo.GetBookCopiesPaginated(siteID, utils.PaginationParams{Page: 0, Size: 10000}, searchTerm)
-			if siteErr != nil {
-				// Log error but continue with other sites
-				continue
-			}
-			if siteCopies, ok := result.Data.([]models.QuyenSach); ok {
-				allCopies = append(allCopies, siteCopies...)
-			}
-		}
-
-		totalCount = len(allCopies)
-
-		// Apply pagination to combined results
-		start := pagination.CalculateOffset()
-		end := start + pagination.Size
-		if start >= len(allCopies) {
-			allCopies = []models.QuyenSach{}
-		} else {
-			if end > len(allCopies) {
-				end = len(allCopies)
-			}
-			allCopies = allCopies[start:end]
-		}
-
-	} else if claims.Role == "THUTHU" {
-		// ThuThu can only see book copies from their site
-		result, err := h.bookRepo.GetBookCopiesPaginated(claims.MaCN, pagination, searchTerm)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error:   "Failed to retrieve book copies",
-				Details: err.Error(),
-			})
-			return
-		}
-
-		if copies, ok := result.Data.([]models.QuyenSach); ok {
-			allCopies = copies
-		}
-		totalCount = result.TotalCount
-
-	} else {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Invalid user role for book copy access",
-			Details: gin.H{
-				"userRole": claims.Role,
-				"allowed":  []string{"THUTHU", "QUANLY"},
-			},
-		})
-		return
-	}
-
-	// Create Flutter-compatible response
-	listResponse := utils.CreateListResponse(allCopies, pagination, totalCount)
-
-	c.JSON(http.StatusOK, listResponse)
-}
-
-// SearchBooks handles book searching functionality
-// This method provides search capabilities for books but is not directly exposed as a route
-// It's used internally by other handlers that need book search functionality
-func (h *BookHandler) SearchBooks(c *gin.Context) {
-	tenSach := c.Query("tenSach")
-	tacGia := c.Query("tacGia")
-	isbn := c.Query("isbn")
-
-	// At least one search parameter is required
-	if tenSach == "" && tacGia == "" && isbn == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "At least one search parameter (tenSach, tacGia, or isbn) is required",
-		})
-		return
-	}
-
-	results, err := h.bookRepo.SearchBooksSystemWide(tenSach, tacGia, isbn)
+	books, total, err := h.bookRepo.GetAllBooks(ctx, &pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to search books system-wide",
+			Error:   "Failed to retrieve books",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, results)
+	listResponse := utils.CreateListResponse(books, pagination, total)
+	c.JSON(http.StatusOK, listResponse)
 }
 
-// GetBookByISBN handles GET /books/{isbn}
-// @Summary Get book by ISBN
-// @Description Get detailed information about a specific book by its ISBN
-// @Tags Books
+// GetBookCopies handles GET /book-copies
+// @Summary Get book copies
+// @Description Retrieve book copies for the current site
+// @Tags Book Copies
 // @Produce json
-// @Security BearerAuth
-// @Param isbn path string true "Book ISBN"
-// @Success 200 {object} models.Sach "Book found"
-// @Failure 400 {object} models.ErrorResponse "Invalid ISBN parameter"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 404 {object} models.ErrorResponse "Book not found"
-// @Router /books/{isbn} [get]
-func (h *BookHandler) GetBookByISBN(c *gin.Context) {
-	isbn := c.Param("isbn")
-	if isbn == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "ISBN parameter is required",
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "List of book copies"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve book copies"
+// @Router /book-copies [get]
+func (h *BookHandler) GetBookCopies(c *gin.Context) {
+	ctx := c.Request.Context()
+	pagination := utils.ParsePaginationParams(c)
+
+	bookCopies, total, err := h.bookRepo.GetBookCopiesBySite(ctx, h.siteID, &pagination)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve book copies",
+			Details: err.Error(),
 		})
 		return
 	}
 
-	book, err := h.bookRepo.GetBookByISBN(isbn, h.siteID)
+	listResponse := utils.CreateListResponse(bookCopies, pagination, total)
+	c.JSON(http.StatusOK, listResponse)
+}
+
+// SearchBooks handles GET /books/search
+// @Summary Search books across all sites
+// @Description Search for books across all sites with availability info
+// @Tags Books
+// @Produce json
+// @Param query query string true "Search query"
+// @Success 200 {object} models.SuccessResponse "Search results"
+// @Failure 400 {object} models.ErrorResponse "Invalid query"
+// @Failure 500 {object} models.ErrorResponse "Search failed"
+// @Router /books/search [get]
+func (h *BookHandler) SearchBooks(c *gin.Context) {
+	ctx := c.Request.Context()
+	query := c.Query("query")
+
+	if query == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: "Search query is required",
+		})
+		return
+	}
+
+	results, err := h.bookRepo.SearchAvailableBooks(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Search failed",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Search completed successfully",
+		Data:    results,
+	})
+}
+
+// GetBookByISBN handles GET /books/:isbn
+// @Summary Get book by ISBN
+// @Description Get detailed information about a book by its ISBN
+// @Tags Books
+// @Produce json
+// @Param isbn path string true "Book ISBN"
+// @Success 200 {object} models.SuccessResponse "Book details"
+// @Failure 404 {object} models.ErrorResponse "Book not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve book"
+// @Router /books/{isbn} [get]
+func (h *BookHandler) GetBookByISBN(c *gin.Context) {
+	ctx := c.Request.Context()
+	isbn := c.Param("isbn")
+
+	book, err := h.bookRepo.GetBookByISBN(ctx, isbn)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
 			Error:   "Book not found",
-			Details: gin.H{"isbn": isbn},
+			Details: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, book)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book retrieved successfully",
+		Data:    book,
+	})
 }
 
-// GetAvailableBookCopy handles GET /books/{isbn}/available
-// @Summary Get available book copy
-// @Description Get an available copy of a book at the current site
+// GetAvailableBookCopy handles GET /books/:isbn/available
+// @Summary Check book availability
+// @Description Check if a book is available at the current site
 // @Tags Books
 // @Produce json
-// @Security BearerAuth
 // @Param isbn path string true "Book ISBN"
-// @Success 200 {object} models.QuyenSach "Available copy found"
-// @Failure 400 {object} models.ErrorResponse "Invalid ISBN parameter"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 404 {object} models.ErrorResponse "No available copy found"
+// @Success 200 {object} models.SuccessResponse "Availability info"
+// @Failure 404 {object} models.ErrorResponse "No available copies"
+// @Failure 500 {object} models.ErrorResponse "Failed to check availability"
 // @Router /books/{isbn}/available [get]
 func (h *BookHandler) GetAvailableBookCopy(c *gin.Context) {
+	ctx := c.Request.Context()
 	isbn := c.Param("isbn")
-	if isbn == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "ISBN parameter is required",
-		})
-		return
-	}
 
-	copy, err := h.bookRepo.GetAvailableBookCopy(isbn, h.siteID)
+	count, err := h.bookRepo.CheckBookAvailability(ctx, isbn, h.siteID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error: "No available copy found at this site",
-			Details: gin.H{
-				"isbn": isbn,
-				"site": h.siteID,
-			},
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to check availability",
+			Details: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, copy)
+	if count == 0 {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Error: "No available copies at this site",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book is available",
+		Data:    map[string]int{"availableCount": count},
+	})
 }
 
 // CreateQuyenSach handles POST /book-copies
-// Implements FR9 - CRUD quyển sách (ThuThu only at their site)
-// @Summary Create new book copy
-// @Description Create a new book copy at the user's site (ThuThu only)
+// @Summary Create book copy
+// @Description Create a new book copy at the current site
 // @Tags Book Copies
 // @Accept json
 // @Produce json
-// @Security BearerAuth
 // @Param bookCopy body models.QuyenSach true "Book copy information"
-// @Success 201 {object} models.QuyenSach "Book copy created successfully"
-// @Failure 400 {object} models.ErrorResponse "Invalid request body"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
-// @Failure 409 {object} models.ErrorResponse "Book copy already exists"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Success 201 {object} models.SuccessResponse "Book copy created"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
+// @Failure 500 {object} models.ErrorResponse "Failed to create book copy"
 // @Router /book-copies [post]
 func (h *BookHandler) CreateQuyenSach(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
-	// Operation validation is handled by middleware, but double-check
-	if claims.Role != "THUTHU" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - only THUTHU can create book copies",
-		})
-		return
-	}
+	ctx := c.Request.Context()
+	userSite := c.GetString("maCN")
 
 	var quyenSach models.QuyenSach
 	if err := c.ShouldBindJSON(&quyenSach); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid request body",
+			Error:   "Invalid request format",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	// Ensure the book copy belongs to the user's site (cannot create at other sites)
-	quyenSach.MaCN = claims.MaCN
+	// Set site to user's site
+	quyenSach.MaCN = userSite
 
-	err := h.bookRepo.CreateQuyenSach(quyenSach)
+	err := h.bookRepo.CreateBookCopy(ctx, &quyenSach, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to create book copy",
@@ -317,32 +217,28 @@ func (h *BookHandler) CreateQuyenSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, quyenSach)
+	c.JSON(http.StatusCreated, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy created successfully",
+		Data:    quyenSach,
+	})
 }
 
-// GetQuyenSach handles GET /site/{siteID}/book-copies/{maQuyenSach}
-// Implements FR9 - CRUD quyển sách
+// GetQuyenSach handles GET /book-copies/:maQuyenSach
 // @Summary Get book copy by ID
-// @Description Get book copy information by ID
+// @Description Get detailed information about a book copy
 // @Tags Book Copies
 // @Produce json
-// @Security BearerAuth
 // @Param maQuyenSach path string true "Book copy ID"
-// @Success 200 {object} models.QuyenSach "Book copy found"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Success 200 {object} models.SuccessResponse "Book copy details"
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve book copy"
 // @Router /book-copies/{maQuyenSach} [get]
 func (h *BookHandler) GetQuyenSach(c *gin.Context) {
+	ctx := c.Request.Context()
 	maQuyenSach := c.Param("maQuyenSach")
-	if maQuyenSach == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Book copy ID is required",
-		})
-		return
-	}
 
-	quyenSach, err := h.bookRepo.ReadQuyenSach(maQuyenSach, h.siteID)
+	bookCopy, err := h.bookRepo.GetBookCopyByID(ctx, maQuyenSach)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
 			Error:   "Book copy not found",
@@ -351,49 +247,43 @@ func (h *BookHandler) GetQuyenSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, quyenSach)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy retrieved successfully",
+		Data:    bookCopy,
+	})
 }
 
-// UpdateQuyenSach handles PUT /site/{siteID}/book-copies/{maQuyenSach}
-// Implements FR9 - CRUD quyển sách (ThuThu only)
+// UpdateQuyenSach handles PUT /book-copies/:maQuyenSach
 // @Summary Update book copy
-// @Description Update book copy information (ThuThu only)
+// @Description Update book copy information
 // @Tags Book Copies
 // @Accept json
 // @Produce json
-// @Security BearerAuth
 // @Param maQuyenSach path string true "Book copy ID"
 // @Param bookCopy body models.QuyenSach true "Updated book copy information"
-// @Success 200 {object} models.SuccessResponse "Book copy updated successfully"
-// @Failure 400 {object} models.ErrorResponse "Invalid request body"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
+// @Success 200 {object} models.SuccessResponse "Book copy updated"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Failure 500 {object} models.ErrorResponse "Failed to update book copy"
 // @Router /book-copies/{maQuyenSach} [put]
 func (h *BookHandler) UpdateQuyenSach(c *gin.Context) {
+	ctx := c.Request.Context()
 	maQuyenSach := c.Param("maQuyenSach")
-	if maQuyenSach == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Book copy ID is required",
-		})
-		return
-	}
+	userSite := c.GetString("maCN")
 
 	var quyenSach models.QuyenSach
 	if err := c.ShouldBindJSON(&quyenSach); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid request body",
+			Error:   "Invalid request format",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	// Ensure the book copy ID matches the URL parameter
 	quyenSach.MaQuyenSach = maQuyenSach
-	quyenSach.MaCN = h.siteID
 
-	err := h.bookRepo.UpdateQuyenSach(quyenSach)
+	err := h.bookRepo.UpdateBookCopy(ctx, &quyenSach, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to update book copy",
@@ -402,34 +292,29 @@ func (h *BookHandler) UpdateQuyenSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, quyenSach)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy updated successfully",
+		Data:    quyenSach,
+	})
 }
 
-// DeleteQuyenSach handles DELETE /site/{siteID}/book-copies/{maQuyenSach}
-// Implements FR9 - CRUD quyển sách (ThuThu only)
+// DeleteQuyenSach handles DELETE /book-copies/:maQuyenSach
 // @Summary Delete book copy
-// @Description Delete a book copy (ThuThu only)
+// @Description Delete a book copy
 // @Tags Book Copies
 // @Produce json
-// @Security BearerAuth
 // @Param maQuyenSach path string true "Book copy ID"
-// @Success 204 "Book copy deleted successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
+// @Success 200 {object} models.SuccessResponse "Book copy deleted"
 // @Failure 404 {object} models.ErrorResponse "Book copy not found"
-// @Failure 409 {object} models.ErrorResponse "Cannot delete book copy currently on loan"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Failure 500 {object} models.ErrorResponse "Failed to delete book copy"
 // @Router /book-copies/{maQuyenSach} [delete]
 func (h *BookHandler) DeleteQuyenSach(c *gin.Context) {
+	ctx := c.Request.Context()
 	maQuyenSach := c.Param("maQuyenSach")
-	if maQuyenSach == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Book copy ID is required",
-		})
-		return
-	}
+	userSite := c.GetString("maCN")
 
-	err := h.bookRepo.DeleteQuyenSach(maQuyenSach, h.siteID)
+	err := h.bookRepo.DeleteBookCopy(ctx, maQuyenSach, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to delete book copy",
@@ -438,5 +323,34 @@ func (h *BookHandler) DeleteQuyenSach(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book copy deleted successfully",
+	})
+}
+
+// Helper functions for pagination
+func parsePage(pageStr string) int {
+	if pageStr == "" {
+		return 0
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		return 0
+	}
+	return page
+}
+
+func parseSize(sizeStr string) int {
+	if sizeStr == "" {
+		return 20
+	}
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil || size <= 0 {
+		return 20
+	}
+	if size > 100 {
+		return 100
+	}
+	return size
 }

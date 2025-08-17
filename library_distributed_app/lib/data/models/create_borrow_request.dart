@@ -6,14 +6,11 @@ part 'create_borrow_request.g.dart';
 class CreateBorrowRequestModel {
   @JsonKey(name: 'maDG')
   final String readerId;
-  
+
   @JsonKey(name: 'maQuyenSach')
   final String bookCopyId;
 
-  const CreateBorrowRequestModel({
-    required this.readerId,
-    required this.bookCopyId,
-  });
+  const CreateBorrowRequestModel({this.readerId = '', this.bookCopyId = ''});
 
   factory CreateBorrowRequestModel.fromJson(Map<String, dynamic> json) =>
       _$CreateBorrowRequestModelFromJson(json);

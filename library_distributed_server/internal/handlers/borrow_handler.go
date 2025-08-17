@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"library_distributed_server/internal/models"
 	"library_distributed_server/internal/repository"
@@ -12,15 +11,13 @@ import (
 )
 
 type BorrowHandler struct {
-	borrowRepo *repository.BorrowRepository
-	statsRepo  *repository.StatsRepository
+	borrowRepo repository.BorrowRepositoryInterface
 	siteID     string
 }
 
-func NewBorrowHandler(borrowRepo *repository.BorrowRepository, siteID string) *BorrowHandler {
+func NewBorrowHandler(borrowRepo repository.BorrowRepositoryInterface, siteID string) *BorrowHandler {
 	return &BorrowHandler{
 		borrowRepo: borrowRepo,
-		statsRepo:  repository.NewStatsRepository(nil), // Will need proper config
 		siteID:     siteID,
 	}
 }
@@ -32,15 +29,15 @@ func NewBorrowHandler(borrowRepo *repository.BorrowRepository, siteID string) *B
 // @Tags Borrowing
 // @Accept json
 // @Produce json
-// @Security BearerAuth
-// @Param request body models.CreateBorrowRequest true "Borrow request details"
-// @Success 201 {object} models.PhieuMuon "Borrow record created successfully"
+// @Param request body models.CreateBorrowRequest true "Borrow request"
+// @Success 201 {object} models.SuccessResponse "Borrow created successfully"
 // @Failure 400 {object} models.ErrorResponse "Invalid request format"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied to this site"
-// @Failure 500 {object} models.ErrorResponse "Failed to create borrow record"
+// @Failure 500 {object} models.ErrorResponse "Failed to create borrow"
 // @Router /borrow [post]
 func (h *BorrowHandler) CreateBorrow(c *gin.Context) {
+	ctx := c.Request.Context()
+	userSite := c.GetString("maCN")
+
 	var req models.CreateBorrowRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -50,54 +47,48 @@ func (h *BorrowHandler) CreateBorrow(c *gin.Context) {
 		return
 	}
 
-	// Create borrow record using stored procedure
-	borrow, err := h.borrowRepo.CreateBorrow(req.MaDG, req.MaQuyenSach, h.siteID)
+	// Create PhieuMuon object
+	borrow := &models.PhieuMuon{
+		MaDG:        req.MaDG,
+		MaQuyenSach: req.MaQuyenSach,
+		MaCN:        userSite,
+	}
+
+	err := h.borrowRepo.CreateBorrow(ctx, borrow, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to create borrow record",
+			Error:   "Failed to create borrow transaction",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, borrow)
+	c.JSON(http.StatusCreated, models.SuccessResponse{
+		Success: true,
+		Message: "Borrow transaction created successfully",
+		Data:    borrow,
+	})
 }
 
-// ReturnBook handles PUT /borrow/return/{id}
-// Implements FR3 - Ghi nhận trả sách (Librarian only, site-specific)
+// ReturnBook handles PUT /borrow/return/:id
+// Implements FR3 - Trả sách (Librarian only, site-specific)
 // @Summary Return borrowed book
-// @Description Return a borrowed book and update its status (Librarian only)
+// @Description Process book return transaction (Librarian only)
 // @Tags Borrowing
 // @Accept json
 // @Produce json
-// @Security BearerAuth
-// @Param id path int true "Borrow transaction ID"
-// @Param request body models.ReturnBookRequest false "Return details (optional)"
-// @Success 204 "Book returned successfully"
-// @Failure 400 {object} models.ErrorResponse "Invalid borrow ID format"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied to this site"
+// @Param id path string true "Book copy ID"
+// @Param request body models.ReturnBookRequest true "Return request"
+// @Success 200 {object} models.SuccessResponse "Book returned successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
 // @Failure 500 {object} models.ErrorResponse "Failed to return book"
 // @Router /borrow/return/{id} [put]
 func (h *BorrowHandler) ReturnBook(c *gin.Context) {
-	idParam := c.Param("id")
-	maPhieuMuon, err := strconv.Atoi(idParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid borrow ID format",
-			Details: err.Error(),
-		})
-		return
-	}
+	ctx := c.Request.Context()
+	maQuyenSach := c.Param("id")
+	userSite := c.GetString("maCN")
 
-	var req models.ReturnBookRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// If no JSON body, just use the ID from URL
-		req.MaQuyenSach = ""
-	}
-
-	// Return book using stored procedure
-	err = h.borrowRepo.ReturnBook(maPhieuMuon, req.MaQuyenSach, h.siteID)
+	err := h.borrowRepo.ReturnBook(ctx, maQuyenSach, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to return book",
@@ -106,70 +97,36 @@ func (h *BorrowHandler) ReturnBook(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Book returned successfully",
+	})
 }
 
 // GetBorrowRecordsWithDetails handles GET /borrow/detailed
-// Enhanced endpoint for Flutter app with detailed borrow information and pagination
-// @Summary Get borrow records with details and pagination
-// @Description Get borrow records with book and reader details with pagination (enhanced for Flutter app)
+// Enhanced for Flutter with comprehensive borrow information
+// @Summary Get detailed borrow records
+// @Description Get borrow records with book and reader details for Flutter app
 // @Tags Borrowing
 // @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (0-based)" default(0)
-// @Param size query int false "Items per page" default(20)
-// @Param search query string false "Search term for book title, author, or reader name"
-// @Success 200 {object} models.ListResponse "Detailed borrow records retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "List of detailed borrow records"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve borrow records"
 // @Router /borrow/detailed [get]
 func (h *BorrowHandler) GetBorrowRecordsWithDetails(c *gin.Context) {
+	ctx := c.Request.Context()
 	userRole := c.GetString("role")
-	siteID := c.GetString("maCN")
-	if siteID == "" {
-		siteID = h.siteID
+	userSite := c.GetString("maCN")
+	pagination := utils.ParsePaginationParams(c)
+
+	// Determine which site to query based on user role
+	siteID := h.siteID
+	if userRole == "THUTHU" {
+		siteID = userSite
 	}
 
-	// Parse pagination parameters
-	pagination := utils.ParsePaginationParams(c)
-	searchTerm := utils.GetSearchTerm(c)
-
-	result, err := h.borrowRepo.GetBorrowRecordsWithDetailsPaginated(siteID, userRole, pagination, searchTerm)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to retrieve detailed borrow records",
-			Details: err.Error(),
-		})
-		return
-	}
-
-	// Create Flutter-compatible response
-	listResponse := utils.CreateListResponse(result.Data, result.Pagination, result.TotalCount)
-
-	c.JSON(http.StatusOK, listResponse)
-}
-
-// GetBorrows handles GET /borrow
-// Implements FR4 - Tra cứu cục bộ (Librarian access to local site data) with pagination
-// @Summary Get borrow records with pagination
-// @Description Get all borrow records for the current site with pagination (Librarian only)
-// @Tags Borrowing
-// @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (0-based)" default(0)
-// @Param size query int false "Items per page" default(20)
-// @Param search query string false "Search term for reader name or borrow ID"
-// @Success 200 {object} models.ListResponse "Borrow records retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied to this site"
-// @Failure 500 {object} models.ErrorResponse "Failed to retrieve borrow records"
-// @Router /borrow [get]
-func (h *BorrowHandler) GetBorrows(c *gin.Context) {
-	// Parse pagination parameters
-	pagination := utils.ParsePaginationParams(c)
-	searchTerm := utils.GetSearchTerm(c)
-
-	result, err := h.borrowRepo.GetBorrowsPaginated(h.siteID, pagination, searchTerm)
+	records, total, err := h.borrowRepo.GetBorrowRecordsWithDetails(ctx, siteID, &pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to retrieve borrow records",
@@ -178,8 +135,140 @@ func (h *BorrowHandler) GetBorrows(c *gin.Context) {
 		return
 	}
 
-	// Create Flutter-compatible response
-	listResponse := utils.CreateListResponse(result.Data, result.Pagination, result.TotalCount)
-
+	listResponse := utils.CreateListResponse(records, pagination, total)
 	c.JSON(http.StatusOK, listResponse)
+}
+
+// GetBorrows handles GET /borrow
+// @Summary Get borrow transactions
+// @Description Retrieve borrow transactions with role-based filtering
+// @Tags Borrowing
+// @Produce json
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "List of borrow transactions"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve borrows"
+// @Router /borrow [get]
+func (h *BorrowHandler) GetBorrows(c *gin.Context) {
+	ctx := c.Request.Context()
+	userRole := c.GetString("role")
+	userSite := c.GetString("maCN")
+	pagination := utils.ParsePaginationParams(c)
+
+	// Role-based site filtering
+	siteID := h.siteID
+	if userRole == "THUTHU" {
+		siteID = userSite
+	}
+
+	borrows, total, err := h.borrowRepo.GetBorrowsBySite(ctx, siteID, &pagination)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve borrows",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	listResponse := utils.CreateListResponse(borrows, pagination, total)
+	c.JSON(http.StatusOK, listResponse)
+}
+
+// GetOverdueBooks handles GET /borrow/overdue
+// @Summary Get overdue books
+// @Description Get list of overdue books for the site
+// @Tags Borrowing
+// @Produce json
+// @Success 200 {object} models.SuccessResponse "List of overdue books"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve overdue books"
+// @Router /borrow/overdue [get]
+func (h *BorrowHandler) GetOverdueBooks(c *gin.Context) {
+	ctx := c.Request.Context()
+	userRole := c.GetString("role")
+	userSite := c.GetString("maCN")
+
+	// Determine which site to query
+	siteID := h.siteID
+	if userRole == "THUTHU" {
+		siteID = userSite
+	}
+
+	overdueBooks, err := h.borrowRepo.GetOverdueBooks(ctx, siteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve overdue books",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Overdue books retrieved successfully",
+		Data:    overdueBooks,
+	})
+}
+
+// GetBorrowHistory handles GET /borrow/history/:maDG
+// @Summary Get borrow history for a reader
+// @Description Get borrowing history for a specific reader
+// @Tags Borrowing
+// @Produce json
+// @Param maDG path string true "Reader ID"
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "Reader's borrow history"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve borrow history"
+// @Router /borrow/history/{maDG} [get]
+func (h *BorrowHandler) GetBorrowHistory(c *gin.Context) {
+	ctx := c.Request.Context()
+	maDG := c.Param("maDG")
+	pagination := utils.ParsePaginationParams(c)
+
+	history, total, err := h.borrowRepo.GetBorrowHistory(ctx, maDG, &pagination)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve borrow history",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	listResponse := utils.CreateListResponse(history, pagination, total)
+	c.JSON(http.StatusOK, listResponse)
+}
+
+// GetBorrowStatistics handles GET /borrow/statistics
+// @Summary Get borrowing statistics
+// @Description Get borrowing statistics for the site
+// @Tags Borrowing
+// @Produce json
+// @Success 200 {object} models.SuccessResponse "Borrowing statistics"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve statistics"
+// @Router /borrow/statistics [get]
+func (h *BorrowHandler) GetBorrowStatistics(c *gin.Context) {
+	ctx := c.Request.Context()
+	userRole := c.GetString("role")
+	userSite := c.GetString("maCN")
+
+	// Determine which site to query
+	siteID := h.siteID
+	if userRole == "THUTHU" {
+		siteID = userSite
+	}
+
+	stats, err := h.borrowRepo.GetBorrowStatistics(ctx, siteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve statistics",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Statistics retrieved successfully",
+		Data:    stats,
+	})
 }

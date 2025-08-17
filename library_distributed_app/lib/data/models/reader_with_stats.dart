@@ -7,28 +7,28 @@ part 'reader_with_stats.g.dart';
 class ReaderWithStatsModel {
   @JsonKey(name: 'maDG')
   final String readerId;
-  
+
   @JsonKey(name: 'hoTen')
   final String fullName;
-  
+
   @JsonKey(name: 'maCNDangKy')
   final Site registrationSite;
-  
+
   final int totalBorrowed;
   final int currentBorrowed;
   final int overdueBooks;
-  
+
   @JsonKey(name: 'lastBorrowDate')
   final String? lastBorrowDate;
 
   const ReaderWithStatsModel({
-    required this.readerId,
-    required this.fullName,
-    required this.registrationSite,
+    this.readerId = '',
+    this.fullName = '',
+    this.registrationSite = Site.q1,
     this.totalBorrowed = 0,
     this.currentBorrowed = 0,
     this.overdueBooks = 0,
-    this.lastBorrowDate,
+    this.lastBorrowDate = '',
   });
 
   factory ReaderWithStatsModel.fromJson(Map<String, dynamic> json) =>

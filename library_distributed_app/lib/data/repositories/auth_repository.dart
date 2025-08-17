@@ -22,7 +22,7 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       logger.i('Login response: ${response.body}');
       if (response.isSuccessful) {
-        final accessToken = response.body!.accessToken!;
+        final accessToken = response.body!.accessToken;
         await secureStorage.writeAccessToken(accessToken);
         return const Success('OK');
       }

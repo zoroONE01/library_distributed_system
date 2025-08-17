@@ -11,11 +11,11 @@ import (
 )
 
 type ReaderHandler struct {
-	readerRepo *repository.ReaderRepository
+	readerRepo repository.ReaderRepositoryInterface
 	siteID     string
 }
 
-func NewReaderHandler(readerRepo *repository.ReaderRepository, siteID string) *ReaderHandler {
+func NewReaderHandler(readerRepo repository.ReaderRepositoryInterface, siteID string) *ReaderHandler {
 	return &ReaderHandler{
 		readerRepo: readerRepo,
 		siteID:     siteID,
@@ -29,51 +29,28 @@ func NewReaderHandler(readerRepo *repository.ReaderRepository, siteID string) *R
 // @Tags Readers
 // @Accept json
 // @Produce json
-// @Security BearerAuth
 // @Param reader body models.DocGia true "Reader information"
-// @Success 201 {object} models.DocGia "Reader created successfully"
-// @Failure 400 {object} models.ErrorResponse "Invalid request body"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only"
-// @Failure 409 {object} models.ErrorResponse "Reader already exists"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Success 201 {object} models.SuccessResponse "Reader created successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request format"
+// @Failure 500 {object} models.ErrorResponse "Failed to create reader"
 // @Router /readers [post]
 func (h *ReaderHandler) CreateDocGia(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
+	ctx := c.Request.Context()
+	userSite := c.GetString("maCN")
 
-	// Operation access validation is handled by middleware, but ensure we have site info
-	if claims.Role == "THUTHU" && claims.MaCN == "" {
+	var reader models.DocGia
+	if err := c.ShouldBindJSON(&reader); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Invalid token: THUTHU role requires site information",
-		})
-		return
-	}
-
-	var docGia models.DocGia
-	if err := c.ShouldBindJSON(&docGia); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid request body",
+			Error:   "Invalid request format",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	// For THUTHU: Ensure the reader is registered to their site
-	// For QUANLY: Use the site specified in the request or default to current handler site
-	if claims.Role == "THUTHU" {
-		docGia.MaCNDangKy = claims.MaCN
-	} else if docGia.MaCNDangKy == "" {
-		docGia.MaCNDangKy = h.siteID // fallback to handler site
-	}
+	// Set registration site to user's site
+	reader.MaCNDangKy = userSite
 
-	err := h.readerRepo.CreateDocGia(docGia)
+	err := h.readerRepo.CreateReader(ctx, &reader, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to create reader",
@@ -82,176 +59,75 @@ func (h *ReaderHandler) CreateDocGia(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, docGia)
+	c.JSON(http.StatusCreated, models.SuccessResponse{
+		Success: true,
+		Message: "Reader created successfully",
+		Data:    reader,
+	})
 }
 
-// GetDocGia handles GET /api/readers/{maDG} and /api/site/{siteID}/readers/{maDG}
-// Implements FR8 - CRUD độc giả (ThuThu/QuanLy with role-based access)
+// GetDocGia handles GET /api/readers/{maDG}
+// Implements FR8 - CRUD độc giả (role-based access)
 // @Summary Get reader by ID
-// @Description Get reader information by ID - access based on user role and reader location
+// @Description Get reader information by ID with role-based access control
 // @Tags Readers
 // @Produce json
-// @Security BearerAuth
 // @Param maDG path string true "Reader ID"
-// @Success 200 {object} models.DocGia "Reader found"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - reader not at user's site"
+// @Success 200 {object} models.SuccessResponse "Reader information"
 // @Failure 404 {object} models.ErrorResponse "Reader not found"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve reader"
 // @Router /readers/{maDG} [get]
 func (h *ReaderHandler) GetDocGia(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
+	ctx := c.Request.Context()
 	maDG := c.Param("maDG")
-	if maDG == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Reader ID is required",
-		})
-		return
-	}
 
-	var docGia *models.DocGia
-	var err error
-
-	// Role-based access control per requirements
-	if claims.Role == "QUANLY" {
-		// FR11: QuanLy can access any reader system-wide - try all sites
-		connections := map[string]string{"Q1": "Q1", "Q3": "Q3"}
-		for siteID := range connections {
-			docGia, err = h.readerRepo.ReadDocGia(maDG, siteID)
-			if err == nil {
-				break // Found reader at this site
-			}
-		}
-	} else if claims.Role == "THUTHU" {
-		// FR8: ThuThu can only access readers from their site
-		docGia, err = h.readerRepo.ReadDocGia(maDG, claims.MaCN)
-	} else {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Invalid user role for reader access",
-			Details: gin.H{
-				"userRole": claims.Role,
-				"allowed":  []string{"THUTHU", "QUANLY"},
-			},
-		})
-		return
-	}
-
-	if err != nil || docGia == nil {
-		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error: "Reader not found",
-			Details: gin.H{
-				"maDG":     maDG,
-				"userRole": claims.Role,
-				"userSite": claims.MaCN,
-			},
-		})
-		return
-	}
-
-	// Additional access check for THUTHU - ensure reader belongs to their site
-	if claims.Role == "THUTHU" && docGia.MaCNDangKy != claims.MaCN {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - reader not registered at your site",
-			Details: gin.H{
-				"readerSite": docGia.MaCNDangKy,
-				"userSite":   claims.MaCN,
-			},
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, *docGia)
-}
-
-// UpdateDocGia handles PUT /api/readers/{maDG} and /api/site/{siteID}/readers/{maDG}
-// Implements FR8 - CRUD độc giả (ThuThu only at their site)
-// @Summary Update reader
-// @Description Update reader information (ThuThu only at their site)
-// @Tags Readers
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param maDG path string true "Reader ID"
-// @Param reader body models.DocGia true "Updated reader information"
-// @Success 200 {object} models.DocGia "Reader updated successfully"
-// @Failure 400 {object} models.ErrorResponse "Invalid request body"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only or wrong site"
-// @Failure 404 {object} models.ErrorResponse "Reader not found"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /readers/{maDG} [put]
-func (h *ReaderHandler) UpdateDocGia(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
-	// Operation validation is handled by middleware, but double-check site access
-	if claims.Role != "THUTHU" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - only THUTHU can update readers",
-		})
-		return
-	}
-
-	maDG := c.Param("maDG")
-	if maDG == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Reader ID is required",
-		})
-		return
-	}
-
-	// First check if reader exists and belongs to THUTHU's site
-	existingReader, err := h.readerRepo.ReadDocGia(maDG, claims.MaCN)
+	reader, err := h.readerRepo.GetReaderByID(ctx, maDG)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error: "Reader not found at your site",
-			Details: gin.H{
-				"maDG":     maDG,
-				"userSite": claims.MaCN,
-			},
-		})
-		return
-	}
-
-	if existingReader.MaCNDangKy != claims.MaCN {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - reader not registered at your site",
-			Details: gin.H{
-				"readerSite": existingReader.MaCNDangKy,
-				"userSite":   claims.MaCN,
-			},
-		})
-		return
-	}
-
-	var docGia models.DocGia
-	if err := c.ShouldBindJSON(&docGia); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid request body",
+			Error:   "Reader not found",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	// Ensure the reader ID matches the URL parameter and belongs to user's site
-	docGia.MaDG = maDG
-	docGia.MaCNDangKy = claims.MaCN // Cannot change registration site
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Reader retrieved successfully",
+		Data:    reader,
+	})
+}
 
-	err = h.readerRepo.UpdateDocGia(docGia)
+// UpdateDocGia handles PUT /api/readers/{maDG}
+// Implements FR8 - CRUD độc giả (ThuThu only)
+// @Summary Update reader
+// @Description Update reader information (ThuThu only)
+// @Tags Readers
+// @Accept json
+// @Produce json
+// @Param maDG path string true "Reader ID"
+// @Param reader body models.DocGia true "Updated reader information"
+// @Success 200 {object} models.SuccessResponse "Reader updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request format"
+// @Failure 404 {object} models.ErrorResponse "Reader not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to update reader"
+// @Router /readers/{maDG} [put]
+func (h *ReaderHandler) UpdateDocGia(c *gin.Context) {
+	ctx := c.Request.Context()
+	maDG := c.Param("maDG")
+	userSite := c.GetString("maCN")
+
+	var reader models.DocGia
+	if err := c.ShouldBindJSON(&reader); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "Invalid request format",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	reader.MaDG = maDG
+
+	err := h.readerRepo.UpdateReader(ctx, &reader, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to update reader",
@@ -260,75 +136,30 @@ func (h *ReaderHandler) UpdateDocGia(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, docGia)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Reader updated successfully",
+		Data:    reader,
+	})
 }
 
-// DeleteDocGia handles DELETE /api/readers/{maDG} and /api/site/{siteID}/readers/{maDG}
-// Implements FR8 - CRUD độc giả (ThuThu only at their site)
+// DeleteDocGia handles DELETE /api/readers/{maDG}
+// Implements FR8 - CRUD độc giả (ThuThu only)
 // @Summary Delete reader
-// @Description Delete a reader (ThuThu only at their site)
+// @Description Delete reader (ThuThu only)
 // @Tags Readers
 // @Produce json
-// @Security BearerAuth
 // @Param maDG path string true "Reader ID"
-// @Success 204 "Reader deleted successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Access denied - ThuThu only or wrong site"
+// @Success 200 {object} models.SuccessResponse "Reader deleted successfully"
 // @Failure 404 {object} models.ErrorResponse "Reader not found"
-// @Failure 409 {object} models.ErrorResponse "Cannot delete reader with active borrows"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Failure 500 {object} models.ErrorResponse "Failed to delete reader"
 // @Router /readers/{maDG} [delete]
 func (h *ReaderHandler) DeleteDocGia(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
-	// Operation validation is handled by middleware, but double-check site access
-	if claims.Role != "THUTHU" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - only THUTHU can delete readers",
-		})
-		return
-	}
-
+	ctx := c.Request.Context()
 	maDG := c.Param("maDG")
-	if maDG == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error: "Reader ID is required",
-		})
-		return
-	}
+	userSite := c.GetString("maCN")
 
-	// First check if reader exists and belongs to THUTHU's site
-	existingReader, err := h.readerRepo.ReadDocGia(maDG, claims.MaCN)
-	if err != nil {
-		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error: "Reader not found at your site",
-			Details: gin.H{
-				"maDG":     maDG,
-				"userSite": claims.MaCN,
-			},
-		})
-		return
-	}
-
-	if existingReader.MaCNDangKy != claims.MaCN {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - reader not registered at your site",
-			Details: gin.H{
-				"readerSite": existingReader.MaCNDangKy,
-				"userSite":   claims.MaCN,
-			},
-		})
-		return
-	}
-
-	err = h.readerRepo.DeleteDocGia(maDG, claims.MaCN)
+	err := h.readerRepo.DeleteReader(ctx, maDG, userSite)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to delete reader",
@@ -337,56 +168,39 @@ func (h *ReaderHandler) DeleteDocGia(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Reader deleted successfully",
+	})
 }
 
-// GetAllDocGia handles GET /api/readers and /api/site/{siteID}/readers
-// Implements FR8 - Local reader list (ThuThu) and FR11 - System-wide access (QuanLy) with pagination
-// @Summary Get readers based on user role with pagination
-// @Description Get readers with pagination - THUTHU sees local site only, QUANLY sees all sites
+// GetAllDocGia handles GET /api/readers
+// Implements FR8 - CRUD độc giả with role-based filtering
+// @Summary Get all readers
+// @Description Get readers with role-based filtering (ThuThu: local site, QuanLy: all sites)
 // @Tags Readers
 // @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (0-based)" default(0)
-// @Param size query int false "Items per page" default(20)
-// @Param search query string false "Search term for reader name or ID"
-// @Success 200 {object} models.ListResponse "Readers retrieved successfully"
-// @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "List of readers"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve readers"
 // @Router /readers [get]
 func (h *ReaderHandler) GetAllDocGia(c *gin.Context) {
-	// Get user role and site from JWT token
-	claims, exists := GetClaims(c)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Error: "Authentication required",
-		})
-		return
-	}
-
-	// Parse pagination parameters
+	ctx := c.Request.Context()
+	userRole := c.GetString("role")
+	userSite := c.GetString("maCN")
 	pagination := utils.ParsePaginationParams(c)
-	searchTerm := utils.GetSearchTerm(c)
 
-	var result *repository.PaginatedResult
+	var readers []*models.DocGia
+	var total int
 	var err error
 
-	// Role-based data access per requirements
-	if claims.Role == "QUANLY" {
-		// FR11: QuanLy can see all readers system-wide
-		result, err = h.readerRepo.GetAllDocGiaSystemWidePaginated(pagination, searchTerm)
-	} else if claims.Role == "THUTHU" {
-		// FR8: ThuThu can only see readers from their site
-		result, err = h.readerRepo.GetAllDocGiaLocalPaginated(claims.MaCN, pagination, searchTerm)
+	if userRole == "QUANLY" {
+		// Managers can see all readers across all sites
+		readers, total, err = h.readerRepo.GetAllReaders(ctx, &pagination)
 	} else {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Invalid user role for reader access",
-			Details: gin.H{
-				"userRole": claims.Role,
-				"allowed":  []string{"THUTHU", "QUANLY"},
-			},
-		})
-		return
+		// ThuThu can only see readers from their site
+		readers, total, err = h.readerRepo.GetReadersBySite(ctx, userSite, &pagination)
 	}
 
 	if err != nil {
@@ -397,43 +211,108 @@ func (h *ReaderHandler) GetAllDocGia(c *gin.Context) {
 		return
 	}
 
-	// Create Flutter-compatible response
-	listResponse := utils.CreateListResponse(result.Data, result.Pagination, result.TotalCount)
-
+	listResponse := utils.CreateListResponse(readers, pagination, total)
 	c.JSON(http.StatusOK, listResponse)
 }
 
-// GetAllDocGiaSystemWide handles system-wide reader queries
-// This method provides system-wide reader search capabilities but is not directly exposed as a route
-// It's used internally by manager handler that needs system-wide reader data
-func (h *ReaderHandler) GetAllDocGiaSystemWide(c *gin.Context) {
-	// Verify manager role
-	userRole, exists := c.Get("role")
-	if !exists || userRole != "QUANLY" {
-		c.JSON(http.StatusForbidden, models.ErrorResponse{
-			Error: "Access denied - Manager role required",
+// SearchReaders handles GET /api/readers/search
+// @Summary Search readers
+// @Description Search for readers across sites (role-based access)
+// @Tags Readers
+// @Produce json
+// @Param query query string true "Search query"
+// @Param page query int false "Page number (0-based, default 0)"
+// @Param size query int false "Page size (default 20)"
+// @Success 200 {object} models.ListResponse "Search results"
+// @Failure 400 {object} models.ErrorResponse "Invalid query"
+// @Failure 500 {object} models.ErrorResponse "Search failed"
+// @Router /readers/search [get]
+func (h *ReaderHandler) SearchReaders(c *gin.Context) {
+	ctx := c.Request.Context()
+	query := c.Query("query")
+	pagination := utils.ParsePaginationParams(c)
+
+	if query == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: "Search query is required",
 		})
 		return
 	}
 
-	searchTerm := c.Query("search")
-
-	var readers []models.DocGia
-	var err error
-
-	if searchTerm != "" {
-		readers, err = h.readerRepo.SearchDocGiaSystemWide(searchTerm)
-	} else {
-		readers, err = h.readerRepo.GetAllDocGiaSystemWide()
-	}
-
+	readers, total, err := h.readerRepo.SearchReaders(ctx, query, &pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "Failed to retrieve readers from system",
+			Error:   "Search failed",
 			Details: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, readers)
+	listResponse := utils.CreateListResponse(readers, pagination, total)
+	c.JSON(http.StatusOK, listResponse)
+}
+
+// GetReaderWithStats handles GET /api/readers/{maDG}/stats
+// @Summary Get reader with statistics
+// @Description Get reader information with borrowing statistics
+// @Tags Readers
+// @Produce json
+// @Param maDG path string true "Reader ID"
+// @Success 200 {object} models.SuccessResponse "Reader with statistics"
+// @Failure 404 {object} models.ErrorResponse "Reader not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve reader statistics"
+// @Router /readers/{maDG}/stats [get]
+func (h *ReaderHandler) GetReaderWithStats(c *gin.Context) {
+	ctx := c.Request.Context()
+	maDG := c.Param("maDG")
+
+	readerStats, err := h.readerRepo.GetReaderWithStats(ctx, maDG)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Error:   "Reader not found or failed to retrieve statistics",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Reader statistics retrieved successfully",
+		Data:    readerStats,
+	})
+}
+
+// GetReadersWithStats handles GET /api/readers/stats
+// @Summary Get readers with statistics
+// @Description Get all readers with borrowing statistics for the site
+// @Tags Readers
+// @Produce json
+// @Success 200 {object} models.SuccessResponse "Readers with statistics"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve reader statistics"
+// @Router /readers/stats [get]
+func (h *ReaderHandler) GetReadersWithStats(c *gin.Context) {
+	ctx := c.Request.Context()
+	userRole := c.GetString("role")
+	userSite := c.GetString("maCN")
+
+	// Determine which site to query
+	siteID := h.siteID
+	if userRole == "THUTHU" {
+		siteID = userSite
+	}
+
+	readersStats, err := h.readerRepo.GetReadersWithStats(ctx, siteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "Failed to retrieve reader statistics",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Success: true,
+		Message: "Reader statistics retrieved successfully",
+		Data:    readersStats,
+	})
 }

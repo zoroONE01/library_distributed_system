@@ -4,9 +4,9 @@ part 'auth_info.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class AuthInfoModel {
-  final String? accessToken;
+  final String accessToken;
 
-  const AuthInfoModel({this.accessToken});
+  const AuthInfoModel({this.accessToken = ''});
 
   factory AuthInfoModel.fromJson(Map<String, dynamic> json) =>
       _$AuthInfoModelFromJson(json);

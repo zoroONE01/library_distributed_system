@@ -164,6 +164,8 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 
 		// Store claims in context for later use
 		c.Set("claims", claims)
+		c.Set("maCN", claims.MaCN) // Set user's site for easy access
+		c.Set("role", claims.Role) // Set user's role for easy access
 		c.Next()
 	}
 }
@@ -289,6 +291,7 @@ func (h *AuthHandler) ValidateOperationAccess(operation string) gin.HandlerFunc 
 		c.Set("operation", operation)
 		c.Set("userRole", claims.Role)
 		c.Set("userSite", claims.MaCN)
+		c.Set("maCN", claims.MaCN) // Add this for backward compatibility
 
 		// Specific operation validations based on requirements
 		switch operation {

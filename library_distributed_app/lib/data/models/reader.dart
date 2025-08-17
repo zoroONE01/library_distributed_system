@@ -15,9 +15,9 @@ class ReaderModel {
   final Site registrationSite;
 
   const ReaderModel({
-    required this.readerId,
-    required this.fullName,
-    required this.registrationSite,
+    this.readerId = '',
+    this.fullName = '',
+    this.registrationSite = Site.q1,
   });
 
   factory ReaderModel.fromJson(Map<String, dynamic> json) =>

@@ -8,15 +8,15 @@ part 'book_search_result.g.dart';
 class BookSearchResultModel {
   @JsonKey(name: 'sach')
   final BookModel book;
-  
+
   @JsonKey(name: 'chiNhanh')
   final List<Site> availableBranches;
-  
+
   @JsonKey(name: 'soLuongCo')
   final int availableCount;
 
   const BookSearchResultModel({
-    required this.book,
+    this.book = const BookModel(),
     this.availableBranches = const [],
     this.availableCount = 0,
   });
