@@ -8,7 +8,7 @@ import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
 // Using Dart record types for parameters
-typedef GetStatsReadersWithStatsParams = ({int page, int size, String? search});
+typedef GetStatsReadersWithStatsParams = ({int page, String? search});
 
 // FR6: Statistics Use Cases (System-wide for QUANLY)
 // ===================================================
@@ -57,7 +57,6 @@ class GetReadersWithStatisticsUseCase
   ) {
     return _repository.getReadersWithStats(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }

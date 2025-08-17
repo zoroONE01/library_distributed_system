@@ -16,7 +16,9 @@ class AppPaginationControls extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Trang ${data.currentPage} trong ${data.totalPages}'),
+        Text(
+          'Trang ${data.currentPage + 1} trong ${data.totalPages > 0 ? data.totalPages : 1}',
+        ),
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded),
           onPressed: !data.isFirstPage

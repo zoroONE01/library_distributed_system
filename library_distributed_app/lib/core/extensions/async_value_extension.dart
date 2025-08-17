@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:library_distributed_app/presentation/widgets/loading_widget.dart';
-import 'package:library_distributed_app/presentation/widgets/retry_widget.dart';
+import 'package:library_distributed_app/core/widgets/loading_widget.dart';
+import 'package:library_distributed_app/core/widgets/retry_widget.dart';
 
 extension AsyncValueExtension<T> on AsyncValue<T> {
   bool get isReloading => isLoading && hasValue;

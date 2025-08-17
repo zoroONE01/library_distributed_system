@@ -9,7 +9,10 @@ class BooksModel {
   final List<BookModel> items;
   final PagingModel paging;
 
-  const BooksModel({this.items = const [], this.paging = const PagingModel()});
+  const BooksModel({
+    this.items = const [],
+    this.paging = const PagingModel(),
+  });
 
   factory BooksModel.fromJson(Map<String, dynamic> json) =>
       _$BooksModelFromJson(json);

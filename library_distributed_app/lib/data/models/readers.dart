@@ -10,8 +10,8 @@ class ReadersModel {
   final PagingModel paging;
 
   const ReadersModel({
-    required this.items,
-    required this.paging,
+    this.items = const [],
+    this.paging = const PagingModel(),
   });
 
   factory ReadersModel.fromJson(Map<String, dynamic> json) =>

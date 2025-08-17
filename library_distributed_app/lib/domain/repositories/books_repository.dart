@@ -16,7 +16,7 @@ part 'books_repository.g.dart';
 abstract class BooksRepository {
   /// Get books with availability information (enhanced for distributed system)
   Future<Result<(List<BookWithAvailabilityEntity>, PagingEntity)>>
-  getBooksWithAvailability({int page = 0, int size = 20});
+  getBooksWithAvailability({int page = 0});
 
   /// Get book by ISBN
   Future<Result<BookEntity>> getBookByIsbn(String isbn);
@@ -37,22 +37,6 @@ abstract class BooksRepository {
 
   /// Delete book from catalog (FR10 - QUANLY only, uses 2PC)
   Future<Result<void>> deleteBook(String isbn);
-
-  /// Legacy methods for backward compatibility
-  @Deprecated('Use getBooksWithAvailability instead')
-  Future<Result<BooksEntity>> getList(PagingEntity paging);
-
-  @Deprecated('Use getBookByIsbn instead')
-  Future<Result<BookEntity>> get(String id);
-
-  @Deprecated('Use createBook instead')
-  Future<Result<String>> createNew(BookEntity book);
-
-  @Deprecated('Use updateBook instead')
-  Future<Result<String>> update(BookEntity book);
-
-  @Deprecated('Use deleteBook instead')
-  Future<Result<String>> delete(String id);
 }
 
 @riverpod

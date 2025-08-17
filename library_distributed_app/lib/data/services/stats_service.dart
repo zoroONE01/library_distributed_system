@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:chopper/chopper.dart';
-import 'package:library_distributed_app/data/models/reader_with_stats.dart';
 import 'package:library_distributed_app/data/models/system_stats_response.dart';
-import 'package:library_distributed_app/data/models/list_response.dart';
+import 'package:library_distributed_app/data/models/readers_with_stats.dart';
 
 part 'stats_service.chopper.dart';
 
@@ -11,7 +10,7 @@ part 'stats_service.chopper.dart';
 abstract class StatsService extends ChopperService {
   
   @GET(path: '/readers')
-  Future<Response<ListResponse<ReaderWithStatsModel>>> getReadersWithStats(
+  Future<Response<ReadersWithStatsModel>> getReadersWithStats(
     @QueryMap() Map<String, dynamic> params,
   );
 

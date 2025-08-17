@@ -26,13 +26,12 @@ abstract class BorrowRepository {
   /// Get borrow records with pagination (FR4 - local access for THUTHU)
   Future<Result<(List<BorrowRecordEntity>, PagingEntity)>> getBorrowRecords({
     int page = 0,
-    int size = 20,
     String? search,
   });
 
   /// Get detailed borrow records with book and reader info
   Future<Result<(List<BorrowRecordWithDetailsEntity>, PagingEntity)>>
-  getBorrowRecordsWithDetails({int page = 0, int size = 20, String? search});
+  getBorrowRecordsWithDetails({int page = 0, String? search});
 
   /// Get borrow record by ID
   Future<Result<BorrowRecordEntity>> getBorrowRecordById(int borrowId);

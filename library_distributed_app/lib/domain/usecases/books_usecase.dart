@@ -7,7 +7,6 @@ import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
 // Using Dart record types for parameters
-typedef GetBooksWithAvailabilityParams = ({int page, int size});
 typedef UpdateBookParams = ({String isbn, BookEntity book});
 
 // FR7, FR10: Enhanced Books Use Cases
@@ -18,19 +17,16 @@ class GetBooksWithAvailabilityUseCase
     extends
         UseCaseWithParams<
           (List<BookWithAvailabilityEntity>, PagingEntity),
-          GetBooksWithAvailabilityParams
+          int
         > {
   const GetBooksWithAvailabilityUseCase(this._repository);
   final BooksRepository _repository;
 
   @override
   Future<Result<(List<BookWithAvailabilityEntity>, PagingEntity)>> call(
-    GetBooksWithAvailabilityParams params,
+    int page,
   ) {
-    return _repository.getBooksWithAvailability(
-      page: params.page,
-      size: params.size,
-    );
+    return _repository.getBooksWithAvailability(page: page);
   }
 }
 

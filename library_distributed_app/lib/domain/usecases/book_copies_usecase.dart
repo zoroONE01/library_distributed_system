@@ -7,7 +7,7 @@ import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
 // Using Dart record types for parameters
-typedef GetBookCopiesParams = ({int page, int size, String? search});
+typedef GetBookCopiesParams = ({int page, String? search});
 typedef UpdateBookCopyParams = ({String bookCopyId, BookCopyEntity bookCopy});
 
 // FR9: Book Copies Use Cases (THUTHU only at their site)
@@ -28,11 +28,7 @@ class GetBookCopiesUseCase
   Future<Result<(List<BookCopyEntity>, PagingEntity)>> call(
     GetBookCopiesParams params,
   ) {
-    return _repository.getBookCopies(
-      page: params.page,
-      size: params.size,
-      search: params.search,
-    );
+    return _repository.getBookCopies(page: params.page, search: params.search);
   }
 }
 

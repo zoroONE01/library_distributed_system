@@ -25,8 +25,10 @@ class LoggingInterceptor implements Interceptor {
     final statusEmoji = response.isSuccessful ? '✅' : '❌';
     logger.d('$statusEmoji ${response.statusCode} ${request.url}');
 
-    if (!response.isSuccessful) {
-      logger.e('📥 Error: ${response.bodyString}');
+    if (response.isSuccessful) {
+      logger.d('📥 Response from ${request.url}: ${response.bodyString}');
+    } else {
+      logger.e('📥 Error from ${request.url}: ${response.bodyString}');
     }
 
     return response;
@@ -42,7 +44,7 @@ class AuthInterceptor implements Interceptor {
     Chain<BodyType> chain,
   ) async {
     final token = await secureStorage.readAccessToken();
-    
+
     if (token != null && token.isNotEmpty) {
       logger.d('🔐 Adding auth token to request: ${chain.request.url}');
       final headers = Map<String, String>.from(chain.request.headers);

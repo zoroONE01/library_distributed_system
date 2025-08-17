@@ -10,8 +10,8 @@ class BorrowRecordsModel {
   final PagingModel paging;
 
   const BorrowRecordsModel({
-    required this.items,
-    required this.paging,
+    this.items = const [],
+    this.paging = const PagingModel(),
   });
 
   factory BorrowRecordsModel.fromJson(Map<String, dynamic> json) =>

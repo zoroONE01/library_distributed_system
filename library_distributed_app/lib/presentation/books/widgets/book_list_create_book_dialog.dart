@@ -6,7 +6,7 @@ import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/toast_extension.dart';
 import 'package:library_distributed_app/domain/entities/book.dart';
 import 'package:library_distributed_app/presentation/books/providers/books_provider.dart';
-import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
+import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
 class BookListCreateBookDialog extends HookConsumerWidget {
   const BookListCreateBookDialog({super.key});

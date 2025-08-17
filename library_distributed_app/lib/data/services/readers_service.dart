@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:chopper/chopper.dart';
 import 'package:library_distributed_app/data/models/reader.dart';
-import 'package:library_distributed_app/data/models/list_response.dart';
+import 'package:library_distributed_app/data/models/readers.dart';
 
 part 'readers_service.chopper.dart';
 
 @ChopperApi(baseUrl: '/readers')
 abstract class ReadersService extends ChopperService {
   @GET(path: '')
-  Future<Response<ListResponse<ReaderModel>>> getList(
+  Future<Response<ReadersModel>> getList(
     @QueryMap() Map<String, dynamic> params,
   );
 

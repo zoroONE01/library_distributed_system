@@ -16,7 +16,6 @@ abstract class BookCopiesRepository {
   /// THUTHU: only their site, QUANLY: system-wide
   Future<Result<(List<BookCopyEntity>, PagingEntity)>> getBookCopies({
     int page = 0,
-    int size = 20,
     String? search,
   });
 
@@ -37,22 +36,6 @@ abstract class BookCopiesRepository {
 
   /// Check if book copy exists and is available for borrowing
   Future<Result<bool>> isBookCopyAvailable(String bookCopyId);
-
-  /// Legacy methods for backward compatibility
-  @Deprecated('Use getBookCopies instead')
-  Future<Result<BookCopiesEntity>> getList(PagingEntity paging);
-
-  @Deprecated('Use getBookCopyById instead')
-  Future<Result<BookCopyEntity>> get(String id);
-
-  @Deprecated('Use createBookCopy instead')
-  Future<Result<String>> createNew(BookCopyEntity book);
-
-  @Deprecated('Use updateBookCopy instead')
-  Future<Result<String>> update(BookCopyEntity book);
-
-  @Deprecated('Use deleteBookCopy instead')
-  Future<Result<String>> delete(String id);
 }
 
 @riverpod

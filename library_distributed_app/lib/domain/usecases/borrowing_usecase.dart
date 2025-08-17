@@ -7,12 +7,8 @@ import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
 // Using Dart record types for parameters
-typedef GetBorrowRecordsParams = ({int page, int size, String? search});
-typedef GetBorrowRecordsWithDetailsParams = ({
-  int page,
-  int size,
-  String? search,
-});
+typedef GetBorrowRecordsParams = ({int page, String? search});
+typedef GetBorrowRecordsWithDetailsParams = ({int page, String? search});
 
 // FR2, FR3, FR4: Borrowing Use Cases
 // ==================================
@@ -33,7 +29,6 @@ class GetBorrowRecordsUseCase
   ) {
     return _repository.getBorrowRecords(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }
@@ -55,7 +50,6 @@ class GetBorrowRecordsWithDetailsUseCase
   ) {
     return _repository.getBorrowRecordsWithDetails(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }

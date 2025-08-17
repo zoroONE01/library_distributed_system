@@ -20,7 +20,7 @@ abstract class StatsRepository {
 
   /// Get readers with borrowing statistics
   Future<Result<(List<ReaderWithStatsEntity>, PagingEntity)>>
-  getReadersWithStats({int page = 0, int size = 20, String? search});
+  getReadersWithStats({int page = 0, String? search});
 
   /// Get site-specific statistics
   Future<Result<SiteStatsEntity>> getSiteStats();

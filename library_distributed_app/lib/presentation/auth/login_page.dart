@@ -9,10 +9,10 @@ import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/core/utils/validator.dart';
 import 'package:library_distributed_app/presentation/app/app_provider.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
-import 'package:library_distributed_app/presentation/widgets/app_button.dart';
-import 'package:library_distributed_app/presentation/widgets/app_drop_down_button.dart';
-import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
-import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
+import 'package:library_distributed_app/core/widgets/app_button.dart';
+import 'package:library_distributed_app/core/widgets/app_drop_down_button.dart';
+import 'package:library_distributed_app/core/widgets/app_scaffold.dart';
+import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});

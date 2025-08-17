@@ -51,11 +51,8 @@ enum BookSortOption { name, author, category, quantity }
 enum SortOrder { ascending, descending }
 
 enum BookStatus {
-  @JsonValue('Có sẵn')
   available('Có sẵn'),
-  @JsonValue('Đang mượn')
   borrowed('Đang mượn'),
-  @JsonValue('Bị hỏng')
   damaged('Bị hỏng');
 
   final String text;

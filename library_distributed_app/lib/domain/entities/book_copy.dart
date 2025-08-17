@@ -6,16 +6,12 @@ class BookCopyEntity {
   final String isbn;
   final Site branchSite;
   final BookStatus status;
-  final String? bookTitle;
-  final String? bookAuthor;
 
   const BookCopyEntity({
     required this.bookCopyId,
     required this.isbn,
     required this.branchSite,
     required this.status,
-    this.bookTitle,
-    this.bookAuthor,
   });
 
   bool get isAvailable => status == BookStatus.available;

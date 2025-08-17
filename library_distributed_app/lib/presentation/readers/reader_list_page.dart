@@ -3,11 +3,11 @@ import 'package:library_distributed_app/core/extensions/text_style_extension.dar
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/core/extensions/widget_extension.dart';
 import 'package:library_distributed_app/domain/entities/paging.dart';
-import 'package:library_distributed_app/presentation/widgets/app_button.dart';
-import 'package:library_distributed_app/presentation/widgets/app_pagination_controls.dart';
-import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
-import 'package:library_distributed_app/presentation/widgets/app_table.dart';
-import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
+import 'package:library_distributed_app/core/widgets/app_button.dart';
+import 'package:library_distributed_app/core/widgets/app_pagination_controls.dart';
+import 'package:library_distributed_app/core/widgets/app_scaffold.dart';
+import 'package:library_distributed_app/core/widgets/app_table.dart';
+import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
 class ReaderListPage extends StatelessWidget {
   const ReaderListPage({super.key});

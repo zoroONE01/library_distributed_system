@@ -5,8 +5,8 @@ import 'package:library_distributed_app/core/extensions/context_extension.dart';
 import 'package:library_distributed_app/core/extensions/router_extension.dart';
 import 'package:library_distributed_app/core/extensions/theme_extension.dart';
 import 'package:library_distributed_app/presentation/books/providers/books_provider.dart';
-import 'package:library_distributed_app/presentation/widgets/app_pagination_controls.dart';
-import 'package:library_distributed_app/presentation/widgets/app_table.dart';
+import 'package:library_distributed_app/core/widgets/app_pagination_controls.dart';
+import 'package:library_distributed_app/core/widgets/app_table.dart';
 
 class BookTable extends ConsumerWidget {
   const BookTable({super.key});

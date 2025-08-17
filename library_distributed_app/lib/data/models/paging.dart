@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:library_distributed_app/core/constants/common.dart';
 import 'package:library_distributed_app/domain/entities/paging.dart';
 
 part 'paging.g.dart';
@@ -9,7 +10,7 @@ class PagingModel {
   final int size;
   final int? totalPages;
 
-  const PagingModel({this.page = 0, this.size = 10, this.totalPages});
+  const PagingModel({this.page = 0, this.size = kPaginationPageSize, this.totalPages});
 
   factory PagingModel.fromJson(Map<String, dynamic> json) =>
       _$PagingModelFromJson(json);

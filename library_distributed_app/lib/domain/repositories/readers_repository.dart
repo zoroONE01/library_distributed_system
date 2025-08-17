@@ -19,7 +19,6 @@ abstract class ReadersRepository {
   /// THUTHU: only their site, QUANLY: system-wide
   Future<Result<(List<ReaderEntity>, PagingEntity)>> getReaders({
     int page = 0,
-    int size = 20,
     String? search,
   });
 
@@ -40,7 +39,7 @@ abstract class ReadersRepository {
 
   /// Get readers with statistics (for stats view)
   Future<Result<(List<ReaderWithStatsEntity>, PagingEntity)>>
-  getReadersWithStats({int page = 0, int size = 20, String? search});
+  getReadersWithStats({int page = 0, String? search});
 
   /// Search readers system-wide (QUANLY only)
   Future<Result<List<ReaderEntity>>> searchReadersSystemWide(String searchTerm);

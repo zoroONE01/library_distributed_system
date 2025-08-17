@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:chopper/chopper.dart';
 import 'package:library_distributed_app/data/models/book.dart';
-import 'package:library_distributed_app/data/models/book_with_availability.dart';
-import 'package:library_distributed_app/data/models/list_response.dart';
+import 'package:library_distributed_app/data/models/books_with_availability.dart';
 
 part 'books_service.chopper.dart';
 
 @ChopperApi(baseUrl: '/books')
 abstract class BooksService extends ChopperService {
   @GET(path: '')
-  Future<Response<ListResponse<BookWithAvailabilityModel>>> getList(
+  Future<Response<BooksWithAvailabilityModel>> getList(
     @QueryMap() Map<String, dynamic> params,
   );
 

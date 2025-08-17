@@ -7,8 +7,8 @@ import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
 // Using Dart record types for parameters
-typedef GetReadersParams = ({int page, int size, String? search});
-typedef GetReadersWithStatsParams = ({int page, int size, String? search});
+typedef GetReadersParams = ({int page, String? search});
+typedef GetReadersWithStatsParams = ({int page, String? search});
 typedef UpdateReaderParams = ({String readerId, ReaderEntity reader});
 
 // FR8: Reader CRUD Use Cases (THUTHU only at their site)
@@ -32,7 +32,6 @@ class GetReadersUseCase
   ) {
     return _repository.getReaders(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }
@@ -131,7 +130,6 @@ class GetReadersWithStatsUseCase
   ) {
     return _repository.getReadersWithStats(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }
@@ -179,7 +177,6 @@ class GetReaderBorrowingHistoryUseCase
     // but provides semantic clarity for borrowing history queries
     return _repository.getReadersWithStats(
       page: params.page,
-      size: params.size,
       search: params.search,
     );
   }

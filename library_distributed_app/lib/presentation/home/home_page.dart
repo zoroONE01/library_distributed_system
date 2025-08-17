@@ -11,11 +11,11 @@ import 'package:library_distributed_app/presentation/app/app_provider.dart';
 import 'package:library_distributed_app/presentation/auth/auth_provider.dart';
 import 'package:library_distributed_app/presentation/readers/reader_list_create_dialog.dart';
 import 'package:library_distributed_app/presentation/search/search_page.dart';
-import 'package:library_distributed_app/presentation/widgets/app_button.dart';
-import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
-import 'package:library_distributed_app/presentation/widgets/app_table.dart';
-import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
-import 'package:library_distributed_app/presentation/widgets/board_layout.dart';
+import 'package:library_distributed_app/core/widgets/app_button.dart';
+import 'package:library_distributed_app/core/widgets/app_scaffold.dart';
+import 'package:library_distributed_app/core/widgets/app_table.dart';
+import 'package:library_distributed_app/core/widgets/app_text_field.dart';
+import 'package:library_distributed_app/core/widgets/board_layout.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});

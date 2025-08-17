@@ -11,21 +11,13 @@ class BookCopyModel {
   @JsonKey(name: 'maCN')
   final Site branchSite;
   @JsonKey(name: 'tinhTrang')
-  final BookStatus status;
-  
-  // Additional fields that might be included in detailed responses
-  @JsonKey(name: 'tenSach')
-  final String? bookTitle;
-  @JsonKey(name: 'tacGia')
-  final String? bookAuthor;
+  final String status;
 
   const BookCopyModel({
     required this.bookCopyId,
     required this.isbn,
     required this.branchSite,
     required this.status,
-    this.bookTitle,
-    this.bookAuthor,
   });
 
   factory BookCopyModel.fromJson(Map<String, dynamic> json) =>
@@ -35,6 +27,6 @@ class BookCopyModel {
 
   @override
   String toString() {
-    return '$runtimeType: {bookCopyId: $bookCopyId, isbn: $isbn, branchSite: ${branchSite.name}, status: ${status.text}}';
+    return '$runtimeType: {bookCopyId: $bookCopyId, isbn: $isbn, branchSite: ${branchSite.name}, status: $status}';
   }
 }

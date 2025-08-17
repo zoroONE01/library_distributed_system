@@ -9,9 +9,9 @@ import 'package:library_distributed_app/presentation/books/providers/books_provi
 import 'package:library_distributed_app/presentation/books/widgets/books_table.dart';
 import 'package:library_distributed_app/presentation/books/widgets/book_list_create_book_dialog.dart';
 import 'package:library_distributed_app/presentation/books/widgets/book_list_sort_dialog.dart';
-import 'package:library_distributed_app/presentation/widgets/app_button.dart';
-import 'package:library_distributed_app/presentation/widgets/app_scaffold.dart';
-import 'package:library_distributed_app/presentation/widgets/app_text_field.dart';
+import 'package:library_distributed_app/core/widgets/app_button.dart';
+import 'package:library_distributed_app/core/widgets/app_scaffold.dart';
+import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
 class BooksPage extends ConsumerWidget {
   const BooksPage({super.key});
