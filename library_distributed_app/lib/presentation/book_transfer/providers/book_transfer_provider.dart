@@ -15,10 +15,14 @@ part 'book_transfer_provider.g.dart';
 /// Repository provider for book transfer operations
 @riverpod
 BookTransferRepository bookTransferRepository(Ref ref) {
-  final coordinatorService = ref.read(apiClientProvider).getService<CoordinatorService>();
-  final bookCopiesService = ref.read(apiClientProvider).getService<BookCopiesService>();
+  final coordinatorService = ref
+      .read(apiClientCoordinatorProvider)
+      .getService<CoordinatorService>();
+  final bookCopiesService = ref
+      .read(apiClientProvider)
+      .getService<BookCopiesService>();
   final booksService = ref.read(apiClientProvider).getService<BooksService>();
-  
+
   return BookTransferRepositoryImpl(
     coordinatorService,
     bookCopiesService,
@@ -44,7 +48,9 @@ Future<void> transferBookCopy(
     throw Exception('Only managers can transfer books between sites');
   }
 
-  final useCase = TransferBookCopyUseCase(ref.read(bookTransferRepositoryProvider));
+  final useCase = TransferBookCopyUseCase(
+    ref.read(bookTransferRepositoryProvider),
+  );
   final result = await useCase.call(request);
   ref.keepAlive();
 
@@ -69,14 +75,13 @@ Future<BookCopyTransferInfoEntity> bookCopyTransferInfo(
     throw Exception('Book copy ID is required');
   }
 
-  final useCase = GetBookCopyTransferInfoUseCase(ref.read(bookTransferRepositoryProvider));
+  final useCase = GetBookCopyTransferInfoUseCase(
+    ref.read(bookTransferRepositoryProvider),
+  );
   final result = await useCase.call(bookCopyId);
   ref.keepAlive();
 
-  return result.fold(
-    (bookInfo) => bookInfo,
-    (failure) => throw failure,
-  );
+  return result.fold((bookInfo) => bookInfo, (failure) => throw failure);
 }
 
 /// Search for transferable book copies
@@ -98,34 +103,55 @@ class TransferableBookCopies extends _$TransferableBookCopies {
   /// Search for transferable book copies
   Future<void> search(String searchQuery) async {
     if (searchQuery.trim().isEmpty) {
-      state = const AsyncValue.data([]);
+      try {
+        state = const AsyncValue.data([]);
+      } catch (_) {
+        // Provider may be disposed, ignore
+      }
       return;
     }
 
     try {
-      state = const AsyncValue.loading();
+      try {
+        state = const AsyncValue.loading();
+      } catch (_) {
+        // Provider may be disposed, return early
+        return;
+      }
 
       final useCase = SearchTransferableBookCopiesUseCase(
         ref.read(bookTransferRepositoryProvider),
       );
       final result = await useCase.call(searchQuery.trim());
 
-      result.fold(
-        (bookCopies) {
-          state = AsyncValue.data(bookCopies);
-        },
-        (failure) {
-          state = AsyncValue.error(failure, StackTrace.current);
-        },
-      );
+      try {
+        result.fold(
+          (bookCopies) {
+            state = AsyncValue.data(bookCopies);
+          },
+          (failure) {
+            state = AsyncValue.error(failure, StackTrace.current);
+          },
+        );
+      } catch (_) {
+        // Provider may be disposed, ignore
+      }
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      try {
+        state = AsyncValue.error(e, stack);
+      } catch (_) {
+        // Provider may be disposed, ignore
+      }
     }
   }
 
   /// Clear search results
   void clear() {
-    state = const AsyncValue.data([]);
+    try {
+      state = const AsyncValue.data([]);
+    } catch (_) {
+      // Provider may be disposed, ignore
+    }
   }
 }
 

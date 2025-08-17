@@ -28,6 +28,7 @@ import 'package:library_distributed_app/data/services/auth_service.dart';
 import 'package:library_distributed_app/data/services/book_copies_service.dart';
 import 'package:library_distributed_app/data/services/books_service.dart';
 import 'package:library_distributed_app/data/services/borrow_service.dart';
+import 'package:library_distributed_app/data/services/coordinator_service.dart';
 import 'package:library_distributed_app/data/services/manager_service.dart';
 import 'package:library_distributed_app/data/services/readers_service.dart';
 import 'package:library_distributed_app/data/services/stats_service.dart';
@@ -92,6 +93,7 @@ final _services = [
   ReadersService.create(),
   ManagerService.create(),
   StatsService.create(),
+  CoordinatorService.create(),
 ];
 
 @Riverpod(keepAlive: true)

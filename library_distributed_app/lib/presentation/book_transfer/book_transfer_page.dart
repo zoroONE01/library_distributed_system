@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:library_distributed_app/core/constants/enums.dart';
@@ -25,10 +27,12 @@ class BookTransferPage extends ConsumerStatefulWidget {
 
 class _BookTransferPageState extends ConsumerState<BookTransferPage> {
   final _searchController = TextEditingController();
+  Timer? _debounceTimer;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -139,12 +143,17 @@ class _BookTransferPageState extends ConsumerState<BookTransferPage> {
                       'Tìm kiếm sách có thể chuyển (theo tên sách, ISBN)',
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   onChanged: (value) {
-                    // Debounce search
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (_searchController.text == value) {
+                    // Cancel previous timer
+                    _debounceTimer?.cancel();
+                    
+                    // Set new timer for debounced search
+                    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+                      if (_searchController.text == value && value.isNotEmpty) {
                         ref
                             .read(transferableBookCopiesProvider.notifier)
                             .search(value);
+                      } else if (value.isEmpty) {
+                        ref.read(transferableBookCopiesProvider.notifier).clear();
                       }
                     });
                   },
@@ -156,6 +165,7 @@ class _BookTransferPageState extends ConsumerState<BookTransferPage> {
                   icon: const Icon(Icons.clear_rounded, size: 20),
                   onPressed: () {
                     _searchController.clear();
+                    _debounceTimer?.cancel();
                     ref.read(transferableBookCopiesProvider.notifier).clear();
                   },
                 ),
@@ -168,6 +178,7 @@ class _BookTransferPageState extends ConsumerState<BookTransferPage> {
           icon: const Icon(Icons.refresh_rounded, size: 20),
           onPressed: () {
             _searchController.clear();
+            _debounceTimer?.cancel();
             ref.read(transferableBookCopiesProvider.notifier).clear();
           },
           shadowColor: Colors.transparent,
