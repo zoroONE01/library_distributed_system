@@ -3,13 +3,13 @@ import 'package:library_distributed_app/domain/entities/paging.dart';
 
 part 'paging.g.dart';
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class PagingModel {
   final int page;
   final int size;
-  final int totalPages;
+  final int? totalPages;
 
-  const PagingModel({this.page = 0, this.size = 5, this.totalPages = 0});
+  const PagingModel({this.page = 0, this.size = 10, this.totalPages});
 
   factory PagingModel.fromJson(Map<String, dynamic> json) =>
       _$PagingModelFromJson(json);
@@ -33,7 +33,7 @@ class PagingModel {
     return PagingEntity(
       currentPage: page,
       pageSize: size,
-      totalPages: totalPages,
+      totalPages: totalPages ?? 1,
     );
   }
 }

@@ -49,3 +49,53 @@ enum UserRolePermission {
 enum BookSortOption { name, author, category, quantity }
 
 enum SortOrder { ascending, descending }
+
+enum BookStatus {
+  @JsonValue('Có sẵn')
+  available('Có sẵn'),
+  @JsonValue('Đang mượn')
+  borrowed('Đang mượn'),
+  @JsonValue('Bị hỏng')
+  damaged('Bị hỏng');
+
+  final String text;
+  const BookStatus(this.text);
+
+  static BookStatus fromString(String? value) {
+    switch (value) {
+      case 'Có sẵn':
+        return BookStatus.available;
+      case 'Đang mượn':
+        return BookStatus.borrowed;
+      case 'Bị hỏng':
+        return BookStatus.damaged;
+      default:
+        return BookStatus.available;
+    }
+  }
+}
+
+enum BorrowStatus {
+  @JsonValue('Borrowed')
+  borrowed('Đang mượn'),
+  @JsonValue('Returned')
+  returned('Đã trả'),
+  @JsonValue('Overdue')
+  overdue('Quá hạn');
+
+  final String text;
+  const BorrowStatus(this.text);
+
+  static BorrowStatus fromString(String? value) {
+    switch (value) {
+      case 'Borrowed':
+        return BorrowStatus.borrowed;
+      case 'Returned':
+        return BorrowStatus.returned;
+      case 'Overdue':
+        return BorrowStatus.overdue;
+      default:
+        return BorrowStatus.borrowed;
+    }
+  }
+}

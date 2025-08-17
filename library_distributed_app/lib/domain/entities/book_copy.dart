@@ -1,21 +1,26 @@
 import 'package:library_distributed_app/domain/entities/paging.dart';
+import 'package:library_distributed_app/core/constants/enums.dart';
 
 class BookCopyEntity {
+  final String bookCopyId;
   final String isbn;
-  final String title;
-  final String author;
-  final String description;
-  final int totalCount;
-  final int availableCount;
+  final Site branchSite;
+  final BookStatus status;
+  final String? bookTitle;
+  final String? bookAuthor;
 
   const BookCopyEntity({
-    this.isbn = '',
-    this.title = '',
-    this.author = '',
-    this.description = '',
-    this.totalCount = 0,
-    this.availableCount = 0,
+    required this.bookCopyId,
+    required this.isbn,
+    required this.branchSite,
+    required this.status,
+    this.bookTitle,
+    this.bookAuthor,
   });
+
+  bool get isAvailable => status == BookStatus.available;
+  bool get isBorrowed => status == BookStatus.borrowed;
+  bool get isDamaged => status == BookStatus.damaged;
 }
 
 class BookCopiesEntity {

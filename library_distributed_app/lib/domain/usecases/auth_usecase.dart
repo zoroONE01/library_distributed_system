@@ -5,17 +5,16 @@ import 'package:library_distributed_app/domain/repositories/auth_repository.dart
 import 'package:library_distributed_app/domain/usecases/usecases.dart';
 import 'package:result_dart/result_dart.dart';
 
-class AuthLoginUseCase
-    extends VoidUseCaseWithParams<({String username, String password})> {
+typedef AuthLoginParams = ({String username, String password});
+
+class AuthLoginUseCase extends VoidUseCaseWithParams<AuthLoginParams> {
   const AuthLoginUseCase({required AuthRepository authRepository})
     : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
 
   @override
-  Future<Result<String>> call(
-    ({String username, String password}) params,
-  ) async {
+  Future<Result<String>> call(AuthLoginParams params) async {
     if (params.username.isEmpty || params.password.isEmpty) {
       return failure('Username and password must not be empty');
     }
