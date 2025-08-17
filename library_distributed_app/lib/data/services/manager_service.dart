@@ -10,26 +10,17 @@ part 'manager_service.chopper.dart';
 @ChopperApi(baseUrl: '/manager')
 abstract class ManagerService extends ChopperService {
   
-  // Book management (FR10 - CRUD danh mục sách)
+  // Book management (FR10 - Create and view book catalog)
   @POST(path: '/books')
   Future<Response<BookModel>> createBook(@Body() BookModel book);
 
   @GET(path: '/books/{isbn}')
   Future<Response<BookModel>> getBook(@Path('isbn') String isbn);
 
-  @PUT(path: '/books/{isbn}')
-  Future<Response<BookModel>> updateBook(
-    @Path('isbn') String isbn,
-    @Body() BookModel book,
-  );
-
-  @DELETE(path: '/books/{isbn}')
-  Future<Response<void>> deleteBook(@Path('isbn') String isbn);
-
   // Search available books system-wide (FR7)
   @GET(path: '/books/search')
   Future<Response<List<BookSearchResultModel>>> searchAvailableBooks(
-    @Query('tenSach') String bookTitle,
+    @Query('query') String searchQuery,
   );
 
   // System statistics (FR6)

@@ -8,26 +8,27 @@ import 'package:library_distributed_app/domain/entities/book.dart';
 import 'package:library_distributed_app/presentation/books/providers/books_provider.dart';
 import 'package:library_distributed_app/core/widgets/app_text_field.dart';
 
-/// Create Book Dialog - FR10 Implementation
+/// Edit Book Dialog - FR10 Implementation
 /// Only available for QUANLY role (managers)
 /// Uses 2PC for distributed transaction management
-class BookListCreateBookDialog extends HookConsumerWidget {
-  const BookListCreateBookDialog({super.key});
+class BookEditDialog extends HookConsumerWidget {
+  const BookEditDialog({
+    super.key,
+    required this.book,
+  });
+
+  final BookEntity book;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isbnController = useTextEditingController();
-    final bookNameController = useTextEditingController();
-    final authorController = useTextEditingController();
+    final isbnController = useTextEditingController(text: book.isbn);
+    final bookNameController = useTextEditingController(text: book.title);
+    final authorController = useTextEditingController(text: book.author);
     final isLoading = useState(false);
 
-    final onPerformCreate = useCallback(
+    final onPerformUpdate = useCallback(
       () async {
         // Validate input
-        if (isbnController.text.trim().isEmpty) {
-          context.showError('Vui lòng nhập mã ISBN');
-          return;
-        }
         if (bookNameController.text.trim().isEmpty) {
           context.showError('Vui lòng nhập tên sách');
           return;
@@ -39,45 +40,48 @@ class BookListCreateBookDialog extends HookConsumerWidget {
 
         isLoading.value = true;
         try {
-          final book = BookEntity(
+          final updatedBook = BookEntity(
             isbn: isbnController.text.trim(),
             title: bookNameController.text.trim(),
             author: authorController.text.trim(),
           );
 
-          await ref.read(createBookProvider(book).future);
+          await ref.read(updateBookProvider((
+            isbn: book.isbn,
+            book: updatedBook,
+          )).future);
           
           if (context.mounted) {
             context.maybePop();
-            context.showSuccess('Thêm đầu sách thành công');
+            context.showSuccess('Cập nhật đầu sách thành công');
           }
         } catch (e) {
           if (context.mounted) {
-            context.showError('Thêm đầu sách thất bại: ${e.toString()}');
+            context.showError('Cập nhật đầu sách thất bại: ${e.toString()}');
           }
         } finally {
           isLoading.value = false;
         }
       },
-      [isbnController, bookNameController, authorController],
+      [bookNameController, authorController],
     );
 
     return AlertDialog(
-      title: Text('Thêm đầu sách mới (FR10)', style: context.headlineMedium),
+      title: Text('Chỉnh sửa đầu sách (FR10)', style: context.headlineMedium),
       actions: [
         TextButton(
           onPressed: isLoading.value ? null : context.maybePop,
           child: Text('Hủy', style: context.bodyLarge),
         ),
         TextButton(
-          onPressed: isLoading.value ? null : onPerformCreate,
+          onPressed: isLoading.value ? null : onPerformUpdate,
           child: isLoading.value
               ? const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text('Thêm', style: context.bodyLarge),
+              : Text('Cập nhật', style: context.bodyLarge),
         ),
       ],
       content: SingleChildScrollView(
@@ -86,26 +90,26 @@ class BookListCreateBookDialog extends HookConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Thêm đầu sách mới vào toàn hệ thống.\nChỉ dành cho QUANLY.',
+              'Chỉnh sửa thông tin đầu sách.\nThao tác này sẽ được thực hiện trên toàn hệ thống.',
               style: context.bodyMedium,
               textAlign: TextAlign.center,
             ),
             AppTextField(
               context,
               controller: isbnController,
-              labelText: 'Nhập mã ISBN *',
+              labelText: 'Mã ISBN (không thể thay đổi)',
               prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
             ),
             AppTextField(
               context,
               controller: bookNameController,
-              labelText: 'Nhập tên sách *',
+              labelText: 'Tên sách *',
               prefixIcon: const Icon(Icons.book_rounded, size: 20),
             ),
             AppTextField(
               context,
               controller: authorController,
-              labelText: 'Nhập tác giả *',
+              labelText: 'Tác giả *',
               prefixIcon: const Icon(Icons.person_rounded, size: 20),
             ),
           ],

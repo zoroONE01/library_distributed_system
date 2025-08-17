@@ -25,10 +25,29 @@ class LoggingInterceptor implements Interceptor {
     final statusEmoji = response.isSuccessful ? '✅' : '❌';
     logger.d('$statusEmoji ${response.statusCode} ${request.url}');
 
-    if (response.isSuccessful) {
-      logger.d('📥 Response from ${request.url}: ${response.bodyString}');
-    } else {
-      logger.e('📥 Error from ${request.url}: ${response.bodyString}');
+    // Always log response body, regardless of parse status or success
+    try {
+      final responseBody = response.bodyString;
+      if (responseBody.isNotEmpty) {
+        if (response.isSuccessful) {
+          logger.d('📥 Response from ${request.url}: $responseBody');
+        } else {
+          logger.e('📥 Error from ${request.url}: $responseBody');
+        }
+      } else {
+        logger.d('📥 Empty response body from ${request.url}');
+      }
+    } catch (e) {
+      // If we can't get bodyString, try to get raw body
+      logger.w('⚠️ Could not parse response body from ${request.url}: $e');
+      try {
+        final rawBody = response.body;
+        logger.d('📥 Raw response from ${request.url}: $rawBody');
+      } catch (rawError) {
+        logger.e(
+          '❌ Could not access raw response body from ${request.url}: $rawError',
+        );
+      }
     }
 
     return response;

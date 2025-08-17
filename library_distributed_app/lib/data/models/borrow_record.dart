@@ -21,7 +21,7 @@ class BorrowRecordModel {
   final String borrowDate;
 
   @JsonKey(name: 'ngayTra')
-  final String returnDate;
+  final String? returnDate;
 
   const BorrowRecordModel({
     this.borrowId = 0,
@@ -29,7 +29,7 @@ class BorrowRecordModel {
     this.bookCopyId = '',
     this.branchSite = Site.q1,
     this.borrowDate = '',
-    this.returnDate = '',
+    this.returnDate,
   });
 
   factory BorrowRecordModel.fromJson(Map<String, dynamic> json) =>

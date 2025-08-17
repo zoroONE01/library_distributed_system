@@ -1,10 +1,11 @@
 import 'package:library_distributed_app/core/constants/common.dart';
+import 'package:library_distributed_app/core/constants/enums.dart';
 import 'package:library_distributed_app/data/models/book.dart';
 import 'package:library_distributed_app/data/models/book_search_result.dart';
-import 'package:library_distributed_app/data/models/book_with_availability.dart';
 import 'package:library_distributed_app/data/services/books_service.dart';
 import 'package:library_distributed_app/data/services/manager_service.dart';
 import 'package:library_distributed_app/domain/entities/book.dart';
+import 'package:library_distributed_app/domain/entities/branch.dart';
 import 'package:library_distributed_app/domain/entities/paging.dart';
 import 'package:library_distributed_app/domain/repositories/books_repository.dart';
 import 'package:result_dart/result_dart.dart';
@@ -29,8 +30,17 @@ class BookRepositoryImpl implements BooksRepository {
       if (response.isSuccessful && response.body != null) {
         final booksModel = response.body!;
 
+        // Convert BookModel to BookWithAvailabilityEntity
+        // Since server only returns basic book info, we set availability counts to 0
         final books = booksModel.items
-            .map((model) => _mapBookWithAvailabilityModelToEntity(model))
+            .map((model) => BookWithAvailabilityEntity(
+                  isbn: model.isbn,
+                  title: model.title,
+                  author: model.author,
+                  availableCount: 0, // Server doesn't provide this in /books endpoint
+                  totalCount: 0,     // Server doesn't provide this in /books endpoint
+                  borrowedCount: 0,  // Server doesn't provide this in /books endpoint
+                ))
             .toList();
 
         final paging = PagingEntity(
@@ -117,33 +127,18 @@ class BookRepositoryImpl implements BooksRepository {
 
   @override
   Future<Result<BookEntity>> updateBook(String isbn, BookEntity book) async {
-    try {
-      final model = _mapBookEntityToModel(book);
-      final response = await _managerService.updateBook(isbn, model);
-
-      if (response.isSuccessful && response.body != null) {
-        return Success(_mapBookModelToEntity(response.body!));
-      }
-
-      return Failure(Exception('Failed to update book: ${response.error}'));
-    } catch (e) {
-      return Failure(Exception('Error updating book: $e'));
-    }
+    // Server API does not support book update operation
+    return Failure(
+      Exception('Book update operation is not supported by the server API'),
+    );
   }
 
   @override
   Future<Result<void>> deleteBook(String isbn) async {
-    try {
-      final response = await _managerService.deleteBook(isbn);
-
-      if (response.isSuccessful) {
-        return const Success(unit);
-      }
-
-      return Failure(Exception('Failed to delete book: ${response.error}'));
-    } catch (e) {
-      return Failure(Exception('Error deleting book: $e'));
-    }
+    // Server API does not support book delete operation
+    return Failure(
+      Exception('Book delete operation is not supported by the server API'),
+    );
   }
 
   // Helper methods for mapping
@@ -163,26 +158,20 @@ class BookRepositoryImpl implements BooksRepository {
     );
   }
 
-  BookWithAvailabilityEntity _mapBookWithAvailabilityModelToEntity(
-    BookWithAvailabilityModel model,
-  ) {
-    return BookWithAvailabilityEntity(
-      isbn: model.isbn,
-      title: model.title,
-      author: model.author,
-      availableCount: model.availableCount,
-      totalCount: model.totalCount,
-      borrowedCount: model.borrowedCount,
-    );
-  }
-
   BookSearchResultEntity _mapBookSearchResultModelToEntity(
     BookSearchResultModel model,
   ) {
     return BookSearchResultEntity(
       book: _mapBookModelToEntity(model.book),
-      availableBranches:
-          [], // This would need proper mapping based on model structure
+      availableBranches: model.availableBranches
+          .map(
+            (branch) => BranchEntity(
+              siteId: Site.fromString(branch.branchCode),
+              name: branch.branchName,
+              address: branch.address,
+            ),
+          )
+          .toList(),
       availableCount: model.availableCount,
     );
   }

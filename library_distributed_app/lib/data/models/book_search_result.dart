@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:library_distributed_app/data/models/book.dart';
-import 'package:library_distributed_app/core/constants/enums.dart';
+import 'package:library_distributed_app/data/models/chi_nhanh.dart';
 
 part 'book_search_result.g.dart';
 
@@ -10,7 +10,7 @@ class BookSearchResultModel {
   final BookModel book;
 
   @JsonKey(name: 'chiNhanh')
-  final List<Site> availableBranches;
+  final List<ChiNhanhModel> availableBranches;
 
   @JsonKey(name: 'soLuongCo')
   final int availableCount;
