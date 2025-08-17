@@ -22,7 +22,10 @@ class App extends HookConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
-      builder: (context, child) => _buildApp(child),
+      builder: (context, child) => GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: _buildApp(child),
+      ),
     );
   }
 

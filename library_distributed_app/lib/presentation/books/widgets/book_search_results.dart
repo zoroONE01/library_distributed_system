@@ -14,13 +14,14 @@ class BookSearchResults extends ConsumerWidget {
 
   final String searchQuery;
 
-  @override
+    @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchResultsAsync = ref.watch(
       searchBooksSystemWideProvider(searchQuery),
     );
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -28,11 +29,12 @@ class BookSearchResults extends ConsumerWidget {
           style: context.headlineMedium,
         ),
         const SizedBox(height: 16),
-        Expanded(
+        Flexible(
           child: searchResultsAsync.whenDataOrPreviousWidget((searchResults) {
             if (searchResults.isEmpty) {
               return Center(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
@@ -64,28 +66,34 @@ class BookSearchResults extends ConsumerWidget {
     BuildContext context,
     List<BookSearchResultEntity> searchResults,
   ) {
-    return AppTable.build(
-      context,
-      columnWidths: const [1, 2, 4, 3, 2, 3],
-      titles: const [
-        '#',
-        'Mã ISBN',
-        'Tên sách',
-        'Tác giả',
-        'Số lượng',
-        'Chi nhánh có sẵn',
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        AppTable.build(
+          context,
+          columnWidths: const [1, 2, 4, 3, 2, 3],
+          titles: const [
+            '#',
+            'Mã ISBN',
+            'Tên sách',
+            'Tác giả',
+            'Số lượng',
+            'Chi nhánh có sẵn',
+          ],
+          rows: searchResults
+              .asMap()
+              .entries
+              .map(
+                (entry) => _buildSearchResultRow(
+                  context,
+                  index: entry.key,
+                  searchResult: entry.value,
+                ),
+              )
+              .toList(),
+        ),
       ],
-      rows: searchResults
-          .asMap()
-          .entries
-          .map(
-            (entry) => _buildSearchResultRow(
-              context,
-              index: entry.key,
-              searchResult: entry.value,
-            ),
-          )
-          .toList(),
     );
   }
 
@@ -134,35 +142,38 @@ class BookSearchResults extends ConsumerWidget {
                     color: context.onSurface.withValues(alpha: 0.6),
                   ),
                 )
-              : Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: availableBranches
-                      .map(
-                        (branch) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.primaryColor.withValues(
-                                alpha: 0.3,
+              : SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: availableBranches
+                        .map(
+                          (branch) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: context.primaryColor.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              branch.name,
+                              style: context.bodySmall.copyWith(
+                                color: context.primaryColor,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                          child: Text(
-                            branch.name,
-                            style: context.bodySmall.copyWith(
-                              color: context.primaryColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                        )
+                        .toList(),
+                  ),
                 ),
         ),
       ],
