@@ -13,6 +13,8 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{fvextra}
+\usepackage{float} % for [H] placement specifier
+\usepackage[section]{placeins} % keep floats within their sections
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
@@ -46,7 +48,7 @@ Bài toán đặt ra là xây dựng một hệ thống thông tin mô phỏng h
 
 Hệ thống có hai vai trò người dùng chính. Vai trò Thủ thư (Librarian) chỉ làm việc với dữ liệu thuộc chi nhánh của mình. Vai trò Quản lý (Manager) có quyền truy cập dữ liệu trên toàn hệ thống để thực hiện các công việc như thống kê, tra cứu và quản lý chung.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\columnwidth]{figures/fig_user_roles.png} 
 \caption{Mô hình vai trò người dùng và phạm vi truy cập.}
@@ -57,7 +59,7 @@ Hệ thống có hai vai trò người dùng chính. Vai trò Thủ thư (Librar
 \subsection{Kiến trúc tổng quan}
 Hệ thống được thiết kế theo mô hình client-server trên môi trường phân tán giả lập. Mỗi site là một máy chủ CSDL. Ví dụ, Site 1 (Chi nhánh Quận 1) sẽ lưu trữ dữ liệu cục bộ của Quận 1, và tương tự cho Site 2. Các dữ liệu dùng chung được nhân bản trên cả hai site. Lớp ứng dụng (Application Layer) chứa logic nghiệp vụ, chịu trách nhiệm điều phối các truy vấn đến các site phù hợp.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_architecture.png} 
 \caption{Sơ đồ kiến trúc tổng quan của hệ thống.}
@@ -67,7 +69,7 @@ Hệ thống được thiết kế theo mô hình client-server trên môi trư�
 \subsection{Thiết kế Lược đồ và Chiến lược Phân tán}
 Lược đồ CSDL được thiết kế để phục vụ các yêu cầu nghiệp vụ và tối ưu cho môi trường phân tán.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_erd.png} 
 \caption{Sơ đồ quan hệ thực thể (ERD).}
@@ -77,7 +79,7 @@ Lược đồ CSDL được thiết kế để phục vụ các yêu cầu nghi�
 Chiến lược phân tán cho từng bảng được xác định như sau~\cite{ozsu_valduriez_2020}:
 Các bảng CHINHANH và SACH được nhân bản toàn bộ (Fully Replicated) vì đây là dữ liệu tham chiếu, có tần suất đọc cao và ghi thấp. Các bảng QUYENSACH, DOCGIA, và PHIEUMUON được phân mảnh ngang (Horizontal Fragmentation) vì dữ liệu của chúng có tính cục bộ cao, giúp tăng hiệu năng cho các thao tác tại từng chi nhánh.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_fragmentation_replication.png} 
 \caption{Sơ đồ minh họa chiến lược phân mảnh và nhân bản dữ liệu.}
@@ -90,7 +92,7 @@ Phần này mô tả cách các lý thuyết CSDLPT được áp dụng vào cá
 \subsection{Xử lý Truy vấn Phân tán}
 Các truy vấn từ vai trò Quản lý thường đòi hỏi phải truy cập dữ liệu từ nhiều site~\cite{ozsu_valduriez_2020}. Ví dụ, để tìm kiếm một đầu sách trên toàn hệ thống (FR7), ứng dụng trước hết truy vấn bảng SACH (đã nhân bản) để lấy ISBN, sau đó gửi truy vấn con song song đến tất cả các site để tìm sách còn lại. Cuối cùng, kết quả được tổng hợp và hiển thị.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_distributed_query_flow.png} 
 \caption{Luồng xử lý truy vấn phân tán cho chức năng thống kê.}
@@ -155,7 +157,7 @@ func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction, isb
 }
 \end{Verbatim}
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_2pc.png} 
 \caption{Luồng hoạt động của giao thức 2PC.}
@@ -166,14 +168,14 @@ func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction, isb
 \subsection{Chức năng cho Thủ thư: Lập phiếu mượn (FR2)}
 Đây là một giao dịch cục bộ, chỉ thao tác trên một site duy nhất. Sau khi Thủ thư đăng nhập, mọi thao tác sẽ mặc định thực hiện trên site của chi nhánh đó. Giao diện cho phép tìm kiếm độc giả và quyển sách. Khi xác nhận mượn, hệ thống thực hiện một giao dịch cục bộ để cập nhật các bảng PHIEUMUON và QUYENSACH.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\columnwidth]{figures/fig_local_transaction.png} 
 \caption{Mô tả luồng giao dịch cục bộ.}
 \label{fig_local_transaction}
 \end{figure}
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_loan_slip_ui.png} 
 \caption{Giao diện chức năng Lập phiếu mượn cho Thủ thư.}
@@ -183,7 +185,7 @@ func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction, isb
 \subsection{Chức năng cho Quản lý: Tìm kiếm sách toàn hệ thống (FR7)}
 Đây là một chức năng yêu cầu truy vấn phân tán, cho phép người dùng tìm kiếm sự có mặt của một đầu sách trên toàn bộ các chi nhánh. Sau khi Quản lý nhập tên sách cần tìm, ứng dụng sẽ thực hiện một truy vấn phân tán để tổng hợp thông tin từ các site khác nhau. Kết quả trả về sẽ là danh sách các chi nhánh hiện có sách và tình trạng của chúng.
 
-\begin{figure}[!h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\columnwidth]{figures/fig_search_ui.png} 
 \caption{Giao diện chức năng Tìm kiếm sách cho Quản lý.}
@@ -242,6 +244,90 @@ func (c *TwoPhaseCommitCoordinator) prepareDelete(participant *TransactionPartic
 
     return err
 }
+\end{Verbatim}
+
+\section{Cấu hình và Cài đặt (Tóm tắt)}
+Mục này tóm tắt các bước cấu hình và cài đặt hệ thống để tái hiện các chức năng đã mô tả.
+
+\subsection{Mã nguồn (Repository) \& Git}
+Kho lưu trữ dự án: \url{https://github.com/zoroONE01/library_distributed_system}
+
+Lấy source về máy:
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+git clone https://github.com/zoroONE01/library_distributed_system.git
+cd library_distributed_system
+
+# Cập nhật code mới nhất sau này
+git pull origin main
+\end{Verbatim}
+
+\subsection{Yêu cầu môi trường}
+\begin{itemize}
+    \item Hệ điều hành: macOS/Windows/Linux, RAM 8GB+ (khuyến nghị 16GB nếu chạy VM)
+    \item Công cụ: Go 1.21+, Flutter 3.8.1+, Git, MSSQL 2019+ (SSMS tùy chọn)
+    \item VM (macOS): Parallels Desktop để chạy SQL Server (địa chỉ thường dùng: 10.211.55.3:1433)
+\end{itemize}
+
+\subsection{Cổng dịch vụ}
+\begin{itemize}
+    \item Site Q1 Service: :8081\quad Site Q3 Service: :8083\quad Coordinator: :8080
+\end{itemize}
+
+\subsection{Cấu hình môi trường (.env)}
+Tạo file \texttt{library\_distributed\_server/.env}:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+# Database Configuration
+DB_SERVER=localhost
+DB_PORT=1433
+DB_USER=sa
+DB_PASSWORD=YourPassword123
+
+# JWT Configuration
+JWT_SECRET=distributed-library-system-secret-key-2024
+JWT_TOKEN_EXPIRY=24h
+
+# Server Ports
+SITE_Q1_PORT=8081
+SITE_Q3_PORT=8083
+COORDINATOR_PORT=8080
+\end{Verbatim}
+
+\subsection{Khởi tạo CSDL}
+Tạo database và chạy migration scripts (qua SSMS hoặc \texttt{sqlcmd}):
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+-- Tạo databases
+CREATE DATABASE Site_TV_Q1;
+CREATE DATABASE Site_TV_Q3;
+
+# Chạy migration (ví dụ với sqlcmd)
+sqlcmd -S localhost -d Site_TV_Q1 -i docs/migration_script_q1.sql
+sqlcmd -S localhost -d Site_TV_Q3 -i docs/migration_script_q3.sql
+\end{Verbatim}
+
+\subsection{Build và chạy nhanh}
+Thực thi tại thư mục gốc repo:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+# Cài đặt và build toàn hệ thống
+make
+
+# Hoặc từng phần
+make server   # Backend
+make app      # Frontend
+
+# Khởi động tất cả services (nếu có task)
+make start
+\end{Verbatim}
+
+Khởi chạy ứng dụng Frontend (ví dụ macOS hoặc Web):
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+cd library_distributed_app
+flutter run -d macos
+# Hoặc Web
+flutter run -d chrome --web-port 3000
 \end{Verbatim}
 
 \section{Kết luận và Hướng phát triển}
