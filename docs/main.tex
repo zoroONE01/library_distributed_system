@@ -1,0 +1,295 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage[utf8]{vietnam}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{fvextra}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+
+\begin{document}
+\title{Báo cáo Đồ án môn học: Cơ sở dữ liệu Phân tán \\ Xây dựng Hệ thống Quản lý Thư viện Phân tán}
+
+
+\author{\IEEEauthorblockN{Nguyễn Thanh Tú}
+\IEEEauthorblockA{Khoa Công nghệ Thông tin 2 \\
+Học viện Công nghệ Bưu chính Viễn thông TP.HCM\\
+TP. Hồ Chí Minh, Việt Nam \\
+Lớp: D18CQCP02-N \\ Mã SV: N18DCCN193 \\
+Email: n18dccn193@student.ptithcm.edu.vn}}
+
+\maketitle
+
+\begin{abstract}
+Báo cáo này trình bày quá trình thiết kế và triển khai "Hệ thống Quản lý Thư viện Phân tán", một ứng dụng mô phỏng hoạt động của chuỗi thư viện trên nhiều chi nhánh. Dự án được xây dựng nhằm áp dụng các kiến thức cốt lõi của môn học Cơ sở dữ liệu Phân tán, bao gồm phân mảnh, nhân bản, xử lý truy vấn và giao dịch phân tán. Hệ thống được triển khai giả lập trên hai site, tương ứng với hai chi nhánh thư viện, và cung cấp các chức năng cho hai vai trò người dùng là Thủ thư và Quản lý. Báo cáo sẽ đi sâu vào chiến lược phân tán dữ liệu, cách các truy vấn và giao dịch được xử lý trên môi trường đa site, và cách hệ thống đảm bảo tính trong suốt đối với người dùng cuối.
+\end{abstract}
+
+\section{Giới thiệu}
+Trong bối cảnh các tổ chức ngày càng mở rộng về quy mô và địa lý, việc quản lý dữ liệu hiệu quả trở thành một thách thức. Cơ sở dữ liệu (CSDL) tập trung truyền thống gặp khó khăn trong việc đáp ứng yêu cầu về hiệu năng và tính sẵn sàng. CSDL phân tán (CSDLPT) ra đời như một giải pháp, cho phép dữ liệu được lưu trữ và xử lý trên nhiều máy tính (site) độc lập được kết nối qua mạng.
+
+Đồ án này tập trung vào việc xây dựng một hệ thống quản lý cho chuỗi thư viện có nhiều chi nhánh, một bài toán điển hình cho ứng dụng CSDLPT. Mỗi chi nhánh có dữ liệu hoạt động cục bộ nhưng vẫn cần chia sẻ thông tin chung và đảm bảo tính nhất quán trên toàn hệ thống.
+
+Mục tiêu của đồ án là thiết kế và hiện thực hóa một mô hình CSDLPT, áp dụng các kỹ thuật chính như phân mảnh ngang để tối ưu hóa truy cập cục bộ, nhân bản toàn bộ để tăng tính sẵn sàng, xử lý truy vấn phân tán để tổng hợp thông tin, và mô phỏng giao dịch phân tán bằng giao thức Two-Phase Commit (2PC) để đảm bảo toàn vẹn dữ liệu~\cite{ozsu_valduriez_2020}.
+
+\section{Bài toán và Yêu cầu}
+Bài toán đặt ra là xây dựng một hệ thống thông tin mô phỏng hoạt động của một chuỗi thư viện gồm nhiều chi nhánh, ví dụ: Thư viện Quận 1 (Site\_TV\_Q1) và Thư viện Quận 3 (Site\_TV\_Q3). Hệ thống cần giải quyết các yêu cầu về tính cục bộ (Data Locality), tính toàn cục (Global Access), tính nhất quán (Consistency), và tính trong suốt (Transparency).
+
+Hệ thống có hai vai trò người dùng chính. Vai trò Thủ thư (Librarian) chỉ làm việc với dữ liệu thuộc chi nhánh của mình. Vai trò Quản lý (Manager) có quyền truy cập dữ liệu trên toàn hệ thống để thực hiện các công việc như thống kê, tra cứu và quản lý chung.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.8\columnwidth]{figures/fig_user_roles.png} 
+\caption{Mô hình vai trò người dùng và phạm vi truy cập.}
+\label{fig_user_roles}
+\end{figure}
+
+\section{Thiết kế và Triển khai Hệ thống}
+\subsection{Kiến trúc tổng quan}
+Hệ thống được thiết kế theo mô hình client-server trên môi trường phân tán giả lập. Mỗi site là một máy chủ CSDL. Ví dụ, Site 1 (Chi nhánh Quận 1) sẽ lưu trữ dữ liệu cục bộ của Quận 1, và tương tự cho Site 2. Các dữ liệu dùng chung được nhân bản trên cả hai site. Lớp ứng dụng (Application Layer) chứa logic nghiệp vụ, chịu trách nhiệm điều phối các truy vấn đến các site phù hợp.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_architecture.png} 
+\caption{Sơ đồ kiến trúc tổng quan của hệ thống.}
+\label{fig_architecture}
+\end{figure}
+
+\subsection{Thiết kế Lược đồ và Chiến lược Phân tán}
+Lược đồ CSDL được thiết kế để phục vụ các yêu cầu nghiệp vụ và tối ưu cho môi trường phân tán.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_erd.png} 
+\caption{Sơ đồ quan hệ thực thể (ERD).}
+\label{fig_erd}
+\end{figure}
+
+Chiến lược phân tán cho từng bảng được xác định như sau~\cite{ozsu_valduriez_2020}:
+Các bảng CHINHANH và SACH được nhân bản toàn bộ (Fully Replicated) vì đây là dữ liệu tham chiếu, có tần suất đọc cao và ghi thấp. Các bảng QUYENSACH, DOCGIA, và PHIEUMUON được phân mảnh ngang (Horizontal Fragmentation) vì dữ liệu của chúng có tính cục bộ cao, giúp tăng hiệu năng cho các thao tác tại từng chi nhánh.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_fragmentation_replication.png} 
+\caption{Sơ đồ minh họa chiến lược phân mảnh và nhân bản dữ liệu.}
+\label{fig_fragmentation_replication}
+\end{figure}
+
+\section{Hiện thực các Khái niệm CSDL Phân tán}
+Phần này mô tả cách các lý thuyết CSDLPT được áp dụng vào các chức năng của hệ thống.
+
+\subsection{Xử lý Truy vấn Phân tán}
+Các truy vấn từ vai trò Quản lý thường đòi hỏi phải truy cập dữ liệu từ nhiều site~\cite{ozsu_valduriez_2020}. Ví dụ, để tìm kiếm một đầu sách trên toàn hệ thống (FR7), ứng dụng trước hết truy vấn bảng SACH (đã nhân bản) để lấy ISBN, sau đó gửi truy vấn con song song đến tất cả các site để tìm sách còn lại. Cuối cùng, kết quả được tổng hợp và hiển thị.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_distributed_query_flow.png} 
+\caption{Luồng xử lý truy vấn phân tán cho chức năng thống kê.}
+\label{fig_distributed_query_flow}
+\end{figure}
+
+\subsection{Quản lý Giao dịch Phân tán (2PC)}
+Các thao tác cập nhật trên dữ liệu nhân bản phải đảm bảo tính nguyên tử. Giao thức Two-Phase Commit (2PC) được sử dụng để giải quyết vấn đề này~\cite{ozsu_valduriez_2020}. Khi Quản lý thêm một đầu sách mới (FR10), giao dịch phải được thực thi trên cả hai site. Giao thức hoạt động qua hai giai đoạn: lấy ý kiến (Voting Phase) và quyết định (Commit/Abort Phase) để đảm bảo tất cả các site cùng commit hoặc cùng abort giao dịch.
+
+\subsubsection{Hiện thực 2PC trong Hệ thống}
+Hệ thống triển khai giao thức 2PC thông qua module \texttt{TwoPhaseCommitCoordinator}. Cấu trúc dữ liệu chính bao gồm:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+type DistributedTransaction struct {
+    ID           string
+    Participants map[string]*TransactionParticipant
+    Status       string // PREPARING, PREPARED, 
+                        // COMMITTING, COMMITTED, 
+                        // ABORTING, ABORTED
+}
+\end{Verbatim}
+
+Giai đoạn 1 (Prepare Phase) được hiện thực như sau:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) preparePhase(
+    txn *DistributedTransaction, isbn, tenSach, 
+    tacGia, transactionID string) error {
+    
+    for siteID, participant := range txn.Participants {
+        query := "EXEC sp_QuanLy_PrepareCreateSach " +
+                "@ISBN = ?, @TenSach = ?, @TacGia = ?, " +
+                "@TransactionId = ?"
+        _, err := participant.Connection.Exec(query, 
+                 isbn, tenSach, tacGia, transactionID)
+        if err != nil {
+            return fmt.Errorf("failed to prepare at site %s", siteID)
+        }
+        participant.Prepared = true
+    }
+    return nil
+}
+\end{Verbatim}
+
+Giai đoạn 2 (Commit Phase) thực hiện commit trên tất cả các site đã prepared:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) commitPhase(txn *DistributedTransaction, isbn, tenSach, tacGia, transactionID string) error {
+    
+    for siteID, participant := range txn.Participants {
+        if !participant.Prepared {
+            return fmt.Errorf("site %s not prepared", siteID)
+        }
+        query := "EXEC sp_QuanLy_CommitCreateSach " + "@ISBN = ?, @TenSach = ?, @TacGia = ?, " + "@TransactionId = ?"
+        _, err := participant.Connection.Exec(query, isbn, tenSach, tacGia, transactionID)
+        if err != nil {
+            return fmt.Errorf("failed to commit at site %s", siteID)
+        }
+        participant.Committed = true
+    }
+    return nil
+}
+\end{Verbatim}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_2pc.png} 
+\caption{Luồng hoạt động của giao thức 2PC.}
+\label{fig_2pc}
+\end{figure}
+
+\section{Mô tả các Chức năng chính}
+\subsection{Chức năng cho Thủ thư: Lập phiếu mượn (FR2)}
+Đây là một giao dịch cục bộ, chỉ thao tác trên một site duy nhất. Sau khi Thủ thư đăng nhập, mọi thao tác sẽ mặc định thực hiện trên site của chi nhánh đó. Giao diện cho phép tìm kiếm độc giả và quyển sách. Khi xác nhận mượn, hệ thống thực hiện một giao dịch cục bộ để cập nhật các bảng PHIEUMUON và QUYENSACH.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.8\columnwidth]{figures/fig_local_transaction.png} 
+\caption{Mô tả luồng giao dịch cục bộ.}
+\label{fig_local_transaction}
+\end{figure}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_loan_slip_ui.png} 
+\caption{Giao diện chức năng Lập phiếu mượn cho Thủ thư.}
+\label{fig_loan_slip_ui}
+\end{figure}
+
+\subsection{Chức năng cho Quản lý: Tìm kiếm sách toàn hệ thống (FR7)}
+Đây là một chức năng yêu cầu truy vấn phân tán, cho phép người dùng tìm kiếm sự có mặt của một đầu sách trên toàn bộ các chi nhánh. Sau khi Quản lý nhập tên sách cần tìm, ứng dụng sẽ thực hiện một truy vấn phân tán để tổng hợp thông tin từ các site khác nhau. Kết quả trả về sẽ là danh sách các chi nhánh hiện có sách và tình trạng của chúng.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_search_ui.png} 
+\caption{Giao diện chức năng Tìm kiếm sách cho Quản lý.}
+\label{fig_search_ui}
+\end{figure}
+
+\subsection{Chức năng Chuyển sách giữa các Chi nhánh (FR11)}
+Đây là chức năng điển hình nhất để minh họa giao dịch phân tán 2PC. Khi chuyển một quyển sách từ chi nhánh này sang chi nhánh khác, hệ thống phải đảm bảo tính nguyên tử - sách chỉ tồn tại ở một nơi tại một thời điểm.
+
+Quá trình chuyển sách được hiện thực như sau:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) TransferBook(
+    maQuyenSach, fromSite, toSite string) error {
+    
+    // Tạo distributed transaction
+    txn := &DistributedTransaction{
+        ID: fmt.Sprintf("transfer_%s_%s_to_%s", 
+            maQuyenSach, fromSite, toSite),
+        Participants: make(map[string]*TransactionParticipant),
+        Status: "PREPARING",
+    }
+    
+    // Phase 1: PREPARE
+    if err := c.preparePhase(txn, maQuyenSach, 
+                            fromSite, toSite); err != nil {
+        c.abortTransaction(txn)
+        return err
+    }
+    
+    // Phase 2: COMMIT
+    if err := c.commitPhase(txn); err != nil {
+        c.abortTransaction(txn)
+        return err
+    }
+    
+    return nil
+}
+\end{Verbatim}
+
+Trong giai đoạn prepare, hệ thống kiểm tra điều kiện và khóa dữ liệu:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) prepareDelete(participant *TransactionParticipant, maQuyenSach string) error {
+
+    // Kiểm tra sách có sẵn để chuyển
+    var count int
+    err := participant.Connection.QueryRow("SELECT COUNT(*) FROM QUYENSACH " + "WHERE MaQuyenSach = ? AND TinhTrang = N'Có sẵn'", maQuyenSach).Scan(&count)
+
+    if count == 0 {
+        return fmt.Errorf("book %s not available", maQuyenSach)
+    }
+    
+    // Khóa bản ghi để chuẩn bị xóa
+    _, err = participant.Connection.Exec("UPDATE QUYENSACH SET TinhTrang = N'Đang chuyển' " + "WHERE MaQuyenSach = ?", maQuyenSach)
+
+    return err
+}
+\end{Verbatim}
+
+\section{Kết luận và Hướng phát triển}
+\subsection{Xử lý Lỗi và Rollback trong 2PC}
+Một khía cạnh quan trọng của giao thức 2PC là khả năng xử lý lỗi và rollback khi có site không thể commit. Hệ thống hiện thực cơ chế abort như sau:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) abortTransaction(txn *DistributedTransaction) {
+    
+    txn.Status = "ABORTING"
+    
+    for siteID, participant := range txn.Participants {
+        if err := c.abortParticipant(participant); err != nil {
+            log.Printf("Failed to abort participant %s: %v", siteID, err)
+        } else {
+            participant.Aborted = true
+        }
+    }
+    
+    txn.Status = "ABORTED"
+}
+\end{Verbatim}
+
+Đối với việc tạo sách phân tán, hệ thống cung cấp stored procedure rollback:
+
+\begin{Verbatim}[fontsize=\footnotesize,breaklines=true,breakanywhere=true]
+func (c *TwoPhaseCommitCoordinator) abortSachCreation(txn *DistributedTransaction, transactionID string) {
+    
+    for siteID, participant := range txn.Participants {
+        query := "EXEC sp_QuanLy_RollbackCreateSach " + "@TransactionId = ?"
+        _, err := participant.Connection.Exec(query, transactionID)
+        if err != nil {
+            log.Printf("Failed to rollback at site %s: %v", siteID, err)
+        }
+        participant.Aborted = true
+    }
+}
+\end{Verbatim}
+
+\subsection{Kết luận}
+Đồ án đã xây dựng thành công "Hệ thống Quản lý Thư viện Phân tán", đáp ứng các yêu cầu đã đề ra. Dự án là một cơ hội để vận dụng các kiến thức nền tảng về CSDLPT. Kết quả đạt được bao gồm việc triển khai thành công chiến lược phân tán dữ liệu, đảm bảo tính trong suốt qua các chức năng truy vấn phân tán, và mô phỏng được cơ chế giao dịch phân tán 2PC để đảm bảo tính nhất quán.
+
+\subsection{Hạn chế và Hướng phát triển}
+Một số hạn chế của hệ thống bao gồm việc mô phỏng 2PC chỉ ở mức logic và hiệu năng của truy vấn phân tán có thể được cải thiện thêm. Hướng phát triển trong tương lai có thể bao gồm việc mở rộng hệ thống bằng cách triển khai các loại phân mảnh khác và cơ chế nhân bản từng phần. Nhìn chung, đồ án đã hoàn thành mục tiêu đề ra và là một minh chứng cho việc áp dụng lý thuyết CSDLPT vào thực tiễn.
+
+\begin{thebibliography}{1}
+\bibitem{ozsu_valduriez_2020}
+M.~T.~Özsu and P.~Valduriez, \emph{Principles of Distributed Database Systems}, 4th~ed.\hskip 1em plus 0.5em minus 0.4em\relax Springer, 2020.
+\end{thebibliography}
+
+\end{document}
